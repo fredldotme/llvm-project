@@ -42,6 +42,8 @@
 #if __has_include(<sys/clonefile.h>)
 #include <sys/clonefile.h>
 #endif
+#include <TargetConditionals.h>
+#include <copyfile.h>
 #elif defined(__FreeBSD__)
 #include <osreldate.h>
 #if __FreeBSD_version >= 1300057
@@ -192,10 +194,16 @@ static char *getprogpath(char ret[PATH_MAX], const char *bin) {
 /// value of argv[0] from program startup.
 std::string getMainExecutable(const char *argv0, void *MainAddr) {
 #if defined(__APPLE__)
+char exe_path[PATH_MAX];
+#if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
+  // On iOS, we can't get the actual executable path (because of ios_system)
+  // We pretend it's in $HOME/Library/usr/bin
+  sprintf(exe_path, "%s/Library/usr/bin/%s", ::getenv("HOME"), argv0);
+  return exe_path;
+#endif
   // On OS X the executable path is saved to the stack by dyld. Reading it
   // from there is much faster than calling dladdr, especially for large
   // binaries with symbols.
-  char exe_path[PATH_MAX];
   uint32_t size = sizeof(exe_path);
   if (_NSGetExecutablePath(exe_path, &size) == 0) {
     char link_path[PATH_MAX];
@@ -1178,9 +1186,15 @@ Expected<file_t> openNativeFileForRead(const Twine &Name, OpenFlags Flags,
   return ResultFD;
 }
 
-file_t getStdinHandle() { return 0; }
-file_t getStdoutHandle() { return 1; }
-file_t getStderrHandle() { return 2; }
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+	file_t getStdinHandle() { return fileno(thread_stdin); }
+	file_t getStdoutHandle() { return fileno(thread_stdout); }
+	file_t getStderrHandle() { return fileno(thread_stderr); }
+#else
+	file_t getStdinHandle() { return 0; }
+	file_t getStdoutHandle() { return 1; }
+	file_t getStderrHandle() { return 2; }
+#endif
 
 Expected<size_t> readNativeFile(file_t FD, MutableArrayRef<char> Buf) {
 #if defined(__APPLE__)

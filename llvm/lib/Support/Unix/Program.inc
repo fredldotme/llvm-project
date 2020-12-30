@@ -48,6 +48,15 @@
 
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+#undef HAVE_POSIX_SPAWN // function is present, but not working
+#include "ios_error.h"
+#include <libgen.h>
+#undef getenv 
+#define fork ios_fork
+#undef _exit
+#define _exit exit
+#endif
 #endif
 
 #if defined(__APPLE__) && !(defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
@@ -178,6 +187,10 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
                     unsigned MemoryLimit, std::string *ErrMsg,
                     BitVector *AffinityMask) {
   if (!llvm::sys::fs::exists(Program)) {
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+       && !ios_executable(Program.str().c_str())  // one of the commands in ios_system
+#endif
+  ) {
     if (ErrMsg)
       *ErrMsg = std::string("Executable \"") + Program.str() +
                 std::string("\" doesn't exist!");
@@ -281,7 +294,11 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
     return false;
 
   // Child process: Execute the program.
+#if TARGET_OS_IPHONE
+  default: {
+#else
   case 0: {
+#endif
     // Redirect file descriptors...
     if (!Redirects.empty()) {
       // Redirect stdin
@@ -390,6 +407,14 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI,
                             std::string *ErrMsg,
                             std::optional<ProcessStatistics> *ProcStat,
                             bool Polling) {
+  int status;
+  ProcessInfo WaitResult;
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+  // iOS: just wait for the process to terminate
+  // TODO: check whether the more sophisticated version below works
+  // with latest iOS_system.
+  WaitResult.Pid = waitpid(PI.Pid, &status, 0);
+#else
   struct sigaction Act, Old;
   assert(PI.Pid && "invalid pid to wait on, process not started?");
 

@@ -62,6 +62,16 @@ using namespace llvm;
 using namespace llvm::objcopy;
 using namespace llvm::object;
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+#include "ios_error.h"
+#undef exit
+#undef write
+#define exit(a) { llvm_shutdown(); ios_exit(a); }
+#endif
+#endif
+
 // The name this program was invoked as.
 static StringRef ToolName;
 

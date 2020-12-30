@@ -80,6 +80,10 @@
 #endif
 #endif
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 using namespace llvm;
 
 static void SignalHandler(int Sig);     // defined below.
@@ -209,7 +213,15 @@ static StringRef Argv0;
 /// Signals that represent requested termination. There's no bug or failure, or
 /// if there is, it's not our direct responsibility. For whatever reason, our
 /// continued execution is no longer desirable.
-static const int IntSigs[] = {SIGHUP, SIGINT, SIGTERM, SIGUSR2};
+static const int IntSigs[] = {
+#if !TARGET_OS_IPHONE
+  SIGHUP, SIGINT, SIGTERM, SIGUSR2
+#else 
+       // leave SIGUSR2 alone when running on iPhone (we need it for Python)
+       // This is not perfect, but signals and threads is a difficult combination.
+  SIGHUP, SIGINT, SIGTERM, 
+#endif
+};
 
 /// Signals that represent that we have a bug, and our prompt termination has
 /// been ordered.

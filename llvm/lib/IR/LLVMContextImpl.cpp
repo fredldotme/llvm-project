@@ -16,7 +16,6 @@
 #include "llvm/IR/OptBisect.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/ManagedStatic.h"
 #include <cassert>
 #include <utility>
 
@@ -225,7 +224,7 @@ void LLVMContextImpl::getSyncScopeNames(
 /// singleton OptBisect if not explicitly set.
 OptPassGate &LLVMContextImpl::getOptPassGate() const {
   if (!OPG)
-    OPG = &(*OptBisector);
+    OPG = &getOptBisector();
   return *OPG;
 }
 

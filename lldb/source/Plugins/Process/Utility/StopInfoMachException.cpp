@@ -10,7 +10,8 @@
 
 #include "lldb/lldb-forward.h"
 
-#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#if defined(__APPLE__) && !defined(TARGET_OS_IPHONE)
 // Needed for the EXC_RESOURCE interpretation macros
 #include <kern/exc_resource.h>
 #endif
@@ -400,7 +401,7 @@ const char *StopInfoMachException::GetDescription() {
     break;
   case 11:
     exc_desc = "EXC_RESOURCE";
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !defined(TARGET_OS_IPHONE)
     {
       int resource_type = EXC_RESOURCE_DECODE_RESOURCE_TYPE(m_exc_code);
 
@@ -437,7 +438,7 @@ const char *StopInfoMachException::GetDescription() {
         subcode_desc = nullptr;
         subcode_label = nullptr;
         break;
-#if defined(RESOURCE_TYPE_IO)
+#if defined(RESOURCE_TYPE_IO) && !defined(TARGET_OS_IPHONE)
       // RESOURCE_TYPE_IO is introduced in macOS SDK 10.12.
       case RESOURCE_TYPE_IO:
         exc_desc = "EXC_RESOURCE RESOURCE_TYPE_IO";

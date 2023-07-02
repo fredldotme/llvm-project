@@ -691,7 +691,7 @@ void sigcont_handler(int signo) {
 
 void reproducer_handler(void *finalize_cmd) {
   if (SBReproducer::Generate()) {
-    int result = std::system(static_cast<const char *>(finalize_cmd));
+    int result = system(static_cast<const char *>(finalize_cmd));
     (void)result;
     fflush(stdout);
   }

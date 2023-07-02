@@ -47,6 +47,14 @@
 #include "llvm/Support/DataTypes.h"
 #endif
 
+#include <TargetConditionals.h>
+#if defined(TARGET_OS_IPHONE)
+extern "C" {
+extern int ios_system(const char* cmd);
+#define system ios_system
+}
+#endif
+
 using namespace lldb;
 using namespace llvm;
 
@@ -683,7 +691,7 @@ void sigcont_handler(int signo) {
 
 void reproducer_handler(void *finalize_cmd) {
   if (SBReproducer::Generate()) {
-    int result = std::system(static_cast<const char *>(finalize_cmd));
+    int result = system(static_cast<const char *>(finalize_cmd));
     (void)result;
     fflush(stdout);
   }

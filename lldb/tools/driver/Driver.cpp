@@ -747,7 +747,12 @@ EXAMPLES:
   llvm::outs() << examples << '\n';
 }
 
-int main(int argc, char const *argv[]) {
+#ifdef LLDB_NO_SYSTEM
+int lldb_main(int argc, char const *argv[])
+#else
+int main(int argc, char const *argv[])
+#endif
+{
   // Editline uses for example iswprint which is dependent on LC_CTYPE.
   std::setlocale(LC_ALL, "");
   std::setlocale(LC_CTYPE, "");

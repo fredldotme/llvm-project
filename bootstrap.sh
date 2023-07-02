@@ -50,10 +50,11 @@ fi
 pushd $OSX_BUILDDIR
 cmake -G Ninja \
 -DLLVM_TARGETS_TO_BUILD="AArch64;X86;WebAssembly" \
--DLLVM_ENABLE_PROJECTS='clang;compiler-rt;lld;flang;openmp' \
+-DLLVM_ENABLE_PROJECTS='clang;compiler-rt;lld;flang;openmp;lldb' \
 -DLLVM_ENABLE_EH=ON \
 -DLLVM_ENABLE_RTTI=ON \
 -DLLVM_LINK_LLVM_DYLIB=ON \
+-DLLDB_INCLUDE_TESTS=OFF \
 -DCMAKE_BUILD_TYPE=Release \
 -DCMAKE_OSX_SYSROOT=${OSX_SDKROOT} \
 -DCMAKE_C_COMPILER=$(xcrun --sdk macosx -f clang) \
@@ -88,8 +89,8 @@ pushd $IOS_BUILDDIR
 cmake -G Ninja \
 -DLLVM_LINK_LLVM_DYLIB=ON \
 -DLLVM_TARGET_ARCH=AArch64 \
--DLLVM_TARGETS_TO_BUILD="AArch64;X86;WebAssembly" \
--DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;openmp' \
+-DLLVM_TARGETS_TO_BUILD="WebAssembly" \
+-DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;openmp;lldb' \
 -DLLVM_DEFAULT_TARGET_TRIPLE=arm64-apple-darwin \
 -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 -DLLVM_ENABLE_THREADS=OFF \
@@ -97,10 +98,15 @@ cmake -G Ninja \
 -DLLVM_ENABLE_BACKTRACES=OFF \
 -DLLVM_ENABLE_EH=ON \
 -DLLVM_ENABLE_RTTI=ON \
+-DLLDB_INCLUDE_TESTS=OFF \
 -DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF \
 -DLIBCXX_ENABLE_EXCEPTIONS=ON \
 -DLIBCXXABI_ENABLE_EXCEPTIONS=ON \
 -DCMAKE_CROSSCOMPILING=TRUE \
+-DLLDB_EXPORT_ALL_SYMBOLS=TRUE \
+-DLLDB_ENABLE_LZMA=FALSE \
+-DLLDB_USE_SYSTEM_DEBUGSERVER=TRUE \
+-DLLDB_TABLEGEN_EXE=${OSX_BUILDDIR}/bin/lldb-tblgen \
 -DLLVM_TABLEGEN=${OSX_BUILDDIR}/bin/llvm-tblgen \
 -DCLANG_TABLEGEN=${OSX_BUILDDIR}/bin/clang-tblgen \
 -DCMAKE_OSX_SYSROOT=${IOS_SDKROOT} \
@@ -161,6 +167,7 @@ xcodebuild -project frameworks.xcodeproj -target link -sdk iphoneos -configurati
 xcodebuild -project frameworks.xcodeproj -target lld -sdk iphoneos -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target lli -sdk iphoneos -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target llc -sdk iphoneos -configuration Release -quiet
+# xcodebuild -project frameworks.xcodeproj -target lldb -sdk iphoneos -configuration Release -quiet
 # xcodebuild -project frameworks.xcodeproj -alltargets -sdk iphoneos -configuration Release -quiet
 comment
 popd
@@ -177,8 +184,8 @@ pushd $SIM_BUILDDIR
 cmake -G Ninja \
 -DLLVM_LINK_LLVM_DYLIB=ON \
 -DLLVM_TARGET_ARCH=X86 \
--DLLVM_TARGETS_TO_BUILD="AArch64;X86;WebAssembly" \
--DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;openmp' \
+-DLLVM_TARGETS_TO_BUILD="WebAssembly" \
+-DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;openmp;lldb' \
 -DLLVM_DEFAULT_TARGET_TRIPLE=x86_64-apple-darwin19.6.0 \
 -DCMAKE_BUILD_TYPE=Release \
 -DLLVM_ENABLE_THREADS=OFF \
@@ -186,10 +193,16 @@ cmake -G Ninja \
 -DLLVM_ENABLE_BACKTRACES=OFF \
 -DLLVM_ENABLE_EH=ON \
 -DLLVM_ENABLE_RTTI=ON \
+-DLLDB_ENABLE_LZMA=FALSE \
+-DLLDB_INCLUDE_TESTS=OFF \
+-DLLDB_EXPORT_ALL_SYMBOLS=TRUE \
+-DLLDB_USE_SYSTEM_DEBUGSERVER=TRUE \
 -DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF \
 -DLIBCXX_ENABLE_EXCEPTIONS=ON \
 -DLIBCXXABI_ENABLE_EXCEPTIONS=ON \
 -DCMAKE_CROSSCOMPILING=TRUE \
+-DLLDB_USE_SYSTEM_DEBUGSERVER=TRUE \
+-DLLDB_TABLEGEN_EXE=${OSX_BUILDDIR}/bin/lldb-tblgen \
 -DLLVM_TABLEGEN=${OSX_BUILDDIR}/bin/llvm-tblgen \
 -DCLANG_TABLEGEN=${OSX_BUILDDIR}/bin/clang-tblgen \
 -DCMAKE_OSX_SYSROOT=${SIM_SDKROOT} \
@@ -251,6 +264,7 @@ xcodebuild -project frameworks.xcodeproj -target link -sdk iphonesimulator -arch
 xcodebuild -project frameworks.xcodeproj -target lld -sdk iphonesimulator -arch x86_64 -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target lli -sdk iphonesimulator -arch x86_64 -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target llc -sdk iphonesimulator -arch x86_64 -configuration Release -quiet
+xcodebuild -project frameworks.xcodeproj -target lldb -sdk iphonesimulator -arch x86_64 -configuration Release -quiet
 comment
 popd
 
@@ -258,7 +272,7 @@ popd
 # 6)
 echo "Merging into xcframeworks:"
 
-for framework in ar lld llc clang dis libLLVM link lli nm opt
+for framework in ar lld llc clang dis libLLVM link lli nm opt lldb
 do
    rm -rf $framework.xcframework
    xcodebuild -create-xcframework -framework build-iphoneos/build/Release-iphoneos/$framework.framework -framework build-iphonesimulator/build/Release-iphonesimulator/$framework.framework -output $framework.xcframework

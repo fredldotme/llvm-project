@@ -16,8 +16,11 @@
 #include "lldb/Utility/Log.h"
 #include "llvm/Support/Errno.h"
 
+#include <TargetConditionals.h>
 #include <climits>
+#ifndef TARGET_OS_IPHONE
 #include <sys/ptrace.h>
+#endif
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -192,9 +195,11 @@ struct ForkLaunchInfo {
           close(fd);
     }
 
+#ifndef TARGET_OS_IPHONE
     // Start tracing this child that is about to exec.
     if (ptrace(PT_TRACE_ME, 0, nullptr, 0) == -1)
       ExitWithError(error_fd, "ptrace");
+#endif
   }
 
   // Execute.  We should never return...

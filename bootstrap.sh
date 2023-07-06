@@ -93,7 +93,7 @@ pushd $IOS_BUILDDIR
 cmake -G Ninja \
 -DLLVM_LINK_LLVM_DYLIB=ON \
 -DLLVM_TARGET_ARCH=AArch64 \
--DLLVM_TARGETS_TO_BUILD="WebAssembly" \
+-DLLVM_TARGETS_TO_BUILD="AArch64;X86;WebAssembly" \
 -DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;openmp;lldb' \
 -DLLVM_DEFAULT_TARGET_TRIPLE=arm64-apple-darwin \
 -DCMAKE_BUILD_TYPE=Release \
@@ -184,7 +184,7 @@ pushd $SIM_BUILDDIR
 cmake -G Ninja \
 -DLLVM_LINK_LLVM_DYLIB=ON \
 -DLLVM_TARGET_ARCH=X86 \
--DLLVM_TARGETS_TO_BUILD="WebAssembly" \
+-DLLVM_TARGETS_TO_BUILD="AArch64;X86;WebAssembly" \
 -DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;openmp;lldb' \
 -DLLVM_DEFAULT_TARGET_TRIPLE=x86_64-apple-darwin19.6.0 \
 -DCMAKE_BUILD_TYPE=Release \
@@ -266,7 +266,7 @@ popd
 # 6)
 echo "Merging into xcframeworks:"
 
-for framework in ar lld llc clang dis libLLVM link lli nm opt lldb
+for framework in ar lld llc clang dis libLLVM link lli nm opt
 do
    rm -rf $framework.xcframework
    xcodebuild -create-xcframework -framework build-iphoneos/build/Release-iphoneos/$framework.framework -framework build-iphonesimulator/build/Release-iphonesimulator/$framework.framework -output $framework.xcframework

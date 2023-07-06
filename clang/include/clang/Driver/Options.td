@@ -1419,6 +1419,8 @@ def fdiscard_value_names : Flag<["-"], "fdiscard-value-names">, Group<f_clang_Gr
   HelpText<"Discard value names in LLVM IR">, Flags<[NoXarchOption]>;
 def fno_discard_value_names : Flag<["-"], "fno-discard-value-names">, Group<f_clang_Group>,
   HelpText<"Do not discard value names in LLVM IR">, Flags<[NoXarchOption]>;
+def fno_disable_free : Flag<["-"], "fno-disable-free">, Group<f_clang_Group>,
+  HelpText<"cancel disable-free in cc1">, Flags<[NoXarchOption]>;
 defm dollars_in_identifiers : BoolFOption<"dollars-in-identifiers",
   LangOpts<"DollarIdents">, Default<!strconcat("!", asm_preprocessor.KeyPath)>,
   PosFlag<SetTrue, [], "Allow">, NegFlag<SetFalse, [], "Disallow">,

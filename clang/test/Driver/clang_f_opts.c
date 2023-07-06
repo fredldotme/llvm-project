@@ -597,3 +597,8 @@
 // RUN: %clang -### -xobjective-c %s 2>&1 | FileCheck -check-prefix=CHECK_NO_DISABLE_DIRECT %s
 // CHECK_DISABLE_DIRECT: -fobjc-disable-direct-methods-for-testing
 // CHECK_NO_DISABLE_DIRECT-NOT: -fobjc-disable-direct-methods-for-testing
+
+// RUN: %clang -### -S %s 2>&1 | FileCheck -check-prefix=CHECK-DISABLE-FREE %s
+// RUN: %clang -### -S -fno-disable-free %s 2>&1 | FileCheck -check-prefix=CHECK-NO-DISABLE-FREE %s
+// CHECK-DISABLE-FREE: "-disable-free"
+// CHECK-NO-DISABLE-FREE-NOT: "-disable-free"

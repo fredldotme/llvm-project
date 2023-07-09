@@ -110,6 +110,8 @@ function(tablegen project ofn)
     COMMENT "Building ${ofn}..."
     )
 
+  list(APPEND LLVM_TABLEGEN_FLAGS "-fno-exceptions")
+
   # `make clean' must remove all those generated files:
   set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${ofn})
 

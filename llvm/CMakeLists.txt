@@ -57,6 +57,8 @@ else()
   set(CMAKE_CXX_EXTENSIONS NO)
 endif()
 
+# set(CMAKE_CXX_FLAGS "-fno-exceptions -ftls-model=local-exec ${CMAKE_CXX_FLAGS}")
+
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "No build type selected, default to Debug")
   set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (default Debug)" FORCE)

@@ -18,6 +18,7 @@
 
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/Signals.h"
 #include <cstdlib>
 
 namespace llvm {
@@ -30,7 +31,7 @@ LLVM_ATTRIBUTE_RETURNS_NONNULL inline void *safe_malloc(size_t Sz) {
     // non-zero, if the space requested was zero.
     if (Sz == 0)
       return safe_malloc(1);
-    report_bad_alloc_error("Allocation failed");
+    report_bad_alloc_error("Allocation failed 1");
   }
   return Result;
 }
@@ -44,7 +45,7 @@ LLVM_ATTRIBUTE_RETURNS_NONNULL inline void *safe_calloc(size_t Count,
     // non-zero, if the space requested was zero.
     if (Count == 0 || Sz == 0)
       return safe_malloc(1);
-    report_bad_alloc_error("Allocation failed");
+    report_bad_alloc_error("Allocation failed 2");
   }
   return Result;
 }
@@ -57,7 +58,7 @@ LLVM_ATTRIBUTE_RETURNS_NONNULL inline void *safe_realloc(void *Ptr, size_t Sz) {
     // non-zero, if the space requested was zero.
     if (Sz == 0)
       return safe_malloc(1);
-    report_bad_alloc_error("Allocation failed");
+    report_bad_alloc_error("Allocation failed 3");
   }
   return Result;
 }

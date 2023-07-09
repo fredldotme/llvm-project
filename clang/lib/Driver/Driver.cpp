@@ -182,7 +182,7 @@ Driver::Driver(StringRef ClangExecutable, StringRef TargetTriple,
       CCPrintProcessStats(false), TargetTriple(TargetTriple), Saver(Alloc),
       CheckInputsExist(true), GenReproducer(false),
       SuppressMissingInputWarning(false) {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR || defined(LLVM_WASI_WEBASSEMBLY)
        // sysroot location depends on App location, which is unknown at compile time:
        SysRoot = ::getenv("SYSROOT");
 #endif

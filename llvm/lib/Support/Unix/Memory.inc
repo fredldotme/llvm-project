@@ -36,6 +36,7 @@ extern "C" void __clear_cache(void *, void*);
 #endif
 
 static int getPosixProtectionFlags(unsigned Flags) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   switch (Flags & llvm::sys::Memory::MF_RWE_MASK) {
   case llvm::sys::Memory::MF_READ:
     return PROT_READ;
@@ -65,6 +66,9 @@ static int getPosixProtectionFlags(unsigned Flags) {
   }
   // Provide a default return value as required by some compilers.
   return PROT_NONE;
+#else
+  return 0;
+#endif
 }
 
 namespace llvm {
@@ -75,6 +79,7 @@ Memory::allocateMappedMemory(size_t NumBytes,
                              const MemoryBlock *const NearBlock,
                              unsigned PFlags,
                              std::error_code &EC) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   EC = std::error_code();
   if (NumBytes == 0)
     return MemoryBlock();
@@ -147,6 +152,13 @@ Memory::allocateMappedMemory(size_t NumBytes,
   }
 
   return Result;
+#else
+  MemoryBlock Result;
+  Result.Address = ::malloc(NumBytes);
+  Result.AllocatedSize = NumBytes;
+  Result.Flags = 0;
+  return Result;
+#endif
 }
 
 std::error_code
@@ -154,8 +166,12 @@ Memory::releaseMappedMemory(MemoryBlock &M) {
   if (M.Address == nullptr || M.AllocatedSize == 0)
     return std::error_code();
 
+#ifndef LLVM_WASI_WEBASSEMBLY
   if (0 != ::munmap(M.Address, M.AllocatedSize))
     return std::error_code(errno, std::generic_category());
+#else
+  ::free(M.Address);
+#endif
 
   M.Address = nullptr;
   M.AllocatedSize = 0;
@@ -183,7 +199,11 @@ Memory::protectMappedMemory(const MemoryBlock &M, unsigned Flags) {
   // and CPU segfaults on trying to clear cache on !PROT_READ page.  Therefore we need
   // to temporarily add PROT_READ for the sake of flushing the instruction caches.
   if (InvalidateCache && !(Protect & PROT_READ)) {
+#ifndef LLVM_WASI_WEBASSEMBLY
     int Result = ::mprotect((void *)Start, End - Start, Protect | PROT_READ);
+#else
+    int Result = -1;
+#endif
     if (Result != 0)
       return std::error_code(errno, std::generic_category());
 
@@ -192,7 +212,11 @@ Memory::protectMappedMemory(const MemoryBlock &M, unsigned Flags) {
   }
 #endif
 
+#ifndef LLVM_WASI_WEBASSEMBLY
   int Result = ::mprotect((void *)Start, End - Start, Protect);
+#else
+  int Result = -1;
+#endif
 
   if (Result != 0)
     return std::error_code(errno, std::generic_category());

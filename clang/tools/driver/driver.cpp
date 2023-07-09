@@ -53,6 +53,7 @@
 #ifdef __APPLE__
 #include <TargetConditionals.h>
 #endif
+#include <iostream>
 using namespace clang;
 using namespace clang::driver;
 using namespace llvm::opt;
@@ -331,6 +332,10 @@ static int ExecuteCC1Tool(SmallVectorImpl<const char *> &ArgV) {
 }
 
 int main(int Argc, const char **Argv) {
+
+  std::cout << "Derenech" << std::endl;
+  std::cout << "calloc:" << std::calloc(1024, 3) << std::endl;
+
   noteBottomOfStack();
   llvm::InitLLVM X(Argc, Argv);
   llvm::setBugReportMsg("PLEASE submit a bug report to " BUG_REPORT_URL

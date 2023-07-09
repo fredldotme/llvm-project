@@ -41,7 +41,7 @@
 #define LITTLE_ENDIAN 1234
 #define BYTE_ORDER BIG_ENDIAN
 #else
-#if !defined(BYTE_ORDER) && !defined(_WIN32)
+#if !defined(BYTE_ORDER) && !defined(_WIN32) && !defined(LLVM_WASI_WEBASSEMBLY)
 #include <machine/endian.h>
 #endif
 #endif

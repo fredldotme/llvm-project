@@ -36,7 +36,7 @@
 #elif defined(_AIX)
 #include <errno.h>
 #include <sys/ldr.h>
-#else
+#elif !defined(LLVM_WASI_WEBASSEMBLY)
 #include <dlfcn.h>
 #endif
 
@@ -124,7 +124,7 @@ const std::string &CIndexer::getClangResourcesPath() {
   LibClangPath += path;
 #elif defined(_AIX)
   getClangResourcesPathImplAIX(LibClangPath);
-#else
+#elif !defined(LLVM_WASI_WEBASSEMBLY)
   // This silly cast below avoids a C++ warning.
   Dl_info info;
   if (dladdr((void *)(uintptr_t)clang_createTranslationUnit, &info) == 0)

@@ -17,3 +17,5 @@ add_llvm_component_library(LLVMTableGen
   LINK_COMPONENTS
   Support
   )
+
+target_compile_options(LLVMTableGen PRIVATE "-fno-exceptions")

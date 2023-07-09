@@ -476,7 +476,12 @@ Expected<std::unique_ptr<orc::ExecutorProcessControl>> launchRemote();
 //===----------------------------------------------------------------------===//
 // main Driver function
 //
+#ifndef LLVM_WASI_WEBASSEMBLY
 int main(int argc, char **argv, char * const *envp) {
+#else
+int main(int argc, char **argv) {
+  char* const* envp = nullptr;
+#endif
   InitLLVM X(argc, argv);
 
   if (argc > 1)
@@ -1197,7 +1202,7 @@ void disallowOrcOptions() {
 }
 
 Expected<std::unique_ptr<orc::ExecutorProcessControl>> launchRemote() {
-#ifndef LLVM_ON_UNIX
+#if !defined(LLVM_ON_UNIX) || defined(LLVM_WASI_WEBASSEMBLY)
   llvm_unreachable("launchRemote not supported on non-Unix platforms");
 #else
   int PipeFD[2][2];

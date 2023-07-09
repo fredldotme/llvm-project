@@ -201,6 +201,7 @@ private:
 }
 
 std::error_code Process::FixupStandardFileDescriptors() {
+#ifndef LLVM_WASI_WEBASSEMBLY
   int NullFD = -1;
   FDCloser FDC(NullFD);
   const int StandardFDs[] = {STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
@@ -231,10 +232,12 @@ std::error_code Process::FixupStandardFileDescriptors() {
     else if (dup2(NullFD, StandardFD) < 0)
       return std::error_code(errno, std::generic_category());
   }
+#endif
   return std::error_code();
 }
 
 std::error_code Process::SafelyCloseFileDescriptor(int FD) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   // Create a signal set filled with *all* signals.
   sigset_t FullSet, SavedSet;
   if (sigfillset(&FullSet) < 0 || sigfillset(&SavedSet) < 0)
@@ -267,6 +270,9 @@ std::error_code Process::SafelyCloseFileDescriptor(int FD) {
   if (ErrnoFromClose)
     return std::error_code(ErrnoFromClose, std::generic_category());
   return std::error_code(EC, std::generic_category());
+#else
+  return std::error_code(0, std::generic_category());
+#endif
 }
 
 bool Process::StandardInIsUserInput() {

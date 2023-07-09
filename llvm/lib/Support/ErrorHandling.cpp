@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <mutex>
 #include <new>
+#include <iostream>
 
 #if defined(HAVE_UNISTD_H)
 # include <unistd.h>
@@ -98,6 +99,7 @@ void llvm::report_fatal_error(StringRef Reason, bool GenCrashDiag) {
 void llvm::report_fatal_error(const Twine &Reason, bool GenCrashDiag) {
   llvm::fatal_error_handler_t handler = nullptr;
   void* handlerData = nullptr;
+
   {
     // Only acquire the mutex while reading the handler, so as not to invoke a
     // user-supplied callback under a lock.
@@ -155,6 +157,9 @@ void llvm::remove_bad_alloc_error_handler() {
 void llvm::report_bad_alloc_error(const char *Reason, bool GenCrashDiag) {
   fatal_error_handler_t Handler = nullptr;
   void *HandlerData = nullptr;
+
+llvm::sys::PrintStackTrace(llvm::outs());
+
   {
     // Only acquire the mutex while reading the handler, so as not to invoke a
     // user-supplied callback under a lock.

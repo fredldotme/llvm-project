@@ -41,7 +41,7 @@ public:
 
 const llvm::opt::OptTable &clang::driver::getDriverOptTable() {
   static const DriverOptTable *Table = []() {
-    auto Result = std::make_unique<DriverOptTable>();
+    static auto Result = std::make_shared<DriverOptTable>();
     // Options.inc is included in DriverOptions.cpp, and calls OptTable's
     // addValues function.
     // Opt is a variable used in the code fragment in Options.inc.
@@ -49,7 +49,7 @@ const llvm::opt::OptTable &clang::driver::getDriverOptTable() {
 #define OPTTABLE_ARG_INIT
 #include "clang/Driver/Options.inc"
 #undef OPTTABLE_ARG_INIT
-    return Result.release();
+    return Result.get();
   }();
   return *Table;
 }

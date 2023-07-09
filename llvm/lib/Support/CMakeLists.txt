@@ -288,6 +288,7 @@ if(LLVM_ENABLE_TERMINFO)
   set(llvm_system_libs ${llvm_system_libs} "${terminfo_library}")
 endif()
 
+target_compile_options(LLVMSupport PRIVATE "-fno-exceptions")
 set_property(TARGET LLVMSupport PROPERTY LLVM_SYSTEM_LIBS "${llvm_system_libs}")
 
 

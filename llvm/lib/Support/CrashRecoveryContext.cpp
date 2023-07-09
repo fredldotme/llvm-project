@@ -34,7 +34,9 @@ struct CrashRecoveryContextImpl {
   const CrashRecoveryContextImpl *Next;
 
   CrashRecoveryContext *CRC;
+#ifndef LLVM_WASI_WEBASSEMBLY
   ::jmp_buf JumpBuffer;
+#endif
   volatile unsigned Failed : 1;
   unsigned SwitchedThread : 1;
   unsigned ValidJumpBuffer : 1;
@@ -75,9 +77,11 @@ public:
 
     CRC->RetCode = RetCode;
 
+#ifndef LLVM_WASI_WEBASSEMBLY
     // Jump back to the RunSafely we were called under.
     if (ValidJumpBuffer)
       longjmp(JumpBuffer, 1);
+#endif
 
     // Otherwise let the caller decide of the outcome of the crash. Currently
     // this occurs when using SEH on Windows with MSVC or clang-cl.
@@ -343,12 +347,15 @@ static void uninstallExceptionOrSignalHandlers() {
 
 #include <signal.h>
 
+#ifndef LLVM_WASI_WEBASSEMBLY
 static const int Signals[] =
     { SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGSEGV, SIGTRAP };
 static const unsigned NumSignals = array_lengthof(Signals);
 static struct sigaction PrevActions[NumSignals];
+#endif
 
 static void CrashRecoverySignalHandler(int Signal) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   // Lookup the current thread local recovery object.
   const CrashRecoveryContextImpl *CRCI = CurrentContext->get();
 
@@ -387,9 +394,11 @@ static void CrashRecoverySignalHandler(int Signal) {
 
   if (CRCI)
     const_cast<CrashRecoveryContextImpl *>(CRCI)->HandleCrash(RetCode, Signal);
+#endif
 }
 
 static void installExceptionOrSignalHandlers() {
+#ifndef LLVM_WASI_WEBASSEMBLY
   // Setup the signal handler.
   struct sigaction Handler;
   Handler.sa_handler = CrashRecoverySignalHandler;
@@ -399,17 +408,21 @@ static void installExceptionOrSignalHandlers() {
   for (unsigned i = 0; i != NumSignals; ++i) {
     sigaction(Signals[i], &Handler, &PrevActions[i]);
   }
+#endif
 }
 
 static void uninstallExceptionOrSignalHandlers() {
+#ifndef LLVM_WASI_WEBASSEMBLY
   // Restore the previous signal handlers.
   for (unsigned i = 0; i != NumSignals; ++i)
     sigaction(Signals[i], &PrevActions[i], nullptr);
+#endif
 }
 
 #endif // !_WIN32
 
 bool CrashRecoveryContext::RunSafely(function_ref<void()> Fn) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   // If crash recovery is disabled, do nothing.
   if (gCrashRecoveryEnabled) {
     assert(!Impl && "Crash recovery context already initialized!");
@@ -421,6 +434,7 @@ bool CrashRecoveryContext::RunSafely(function_ref<void()> Fn) {
       return false;
     }
   }
+#endif
 
   Fn();
   return true;

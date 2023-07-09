@@ -255,7 +255,9 @@ static const size_t NumSigs =
 
 static std::atomic<unsigned> NumRegisteredSignals = ATOMIC_VAR_INIT(0);
 static struct {
+#ifndef LLVM_WASI_WEBASSEMBLY
   struct sigaction SA;
+#endif
   int SigNo;
 } RegisteredSignalInfo[NumSigs];
 
@@ -291,6 +293,7 @@ static void CreateSigAltStack() {}
 #endif
 
 static void RegisterHandlers() { // Not signal-safe.
+#ifndef LLVM_WASI_WEBASSEMBLY
   // The mutex prevents other threads from registering handlers while we're
   // doing it. We also have to protect the handlers and their count because
   // a signal handler could fire while we're registeting handlers.
@@ -339,15 +342,18 @@ static void RegisterHandlers() { // Not signal-safe.
     registerHandler(SIGPIPE, SignalKind::IsKill);
   for (auto S : InfoSigs)
     registerHandler(S, SignalKind::IsInfo);
+#endif
 }
 
 void sys::unregisterHandlers() {
+#ifndef LLVM_WASI_WEBASSEMBLY
   // Restore all of the signal handlers to how they were before we showed up.
   for (unsigned i = 0, e = NumRegisteredSignals.load(); i != e; ++i) {
     sigaction(RegisteredSignalInfo[i].SigNo,
               &RegisteredSignalInfo[i].SA, nullptr);
     --NumRegisteredSignals;
   }
+#endif
 }
 
 /// Process the FilesToRemove list.
@@ -379,6 +385,7 @@ static RETSIGTYPE SignalHandler(int Sig) {
   // instead of recursing in the signal handler.
   sys::unregisterHandlers();
 
+#ifndef LLVM_WASI_WEBASSEMBLY
   // Unmask all potentially blocked kill signals.
   sigset_t SigMask;
   sigfillset(&SigMask);
@@ -402,6 +409,7 @@ static RETSIGTYPE SignalHandler(int Sig) {
       return;
     }
   }
+#endif
 
   // Otherwise if it is a fault (like SEGV) run any handler.
   llvm::sys::RunSignalHandlers();

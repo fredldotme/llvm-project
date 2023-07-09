@@ -57,5 +57,7 @@ add_tablegen(llvm-tblgen LLVM
   WebAssemblyDisassemblerEmitter.cpp
   CTagsEmitter.cpp
   )
+
+target_compile_options(llvm-tblgen PRIVATE "-fno-exceptions")
 target_link_libraries(llvm-tblgen PRIVATE LLVMTableGenGlobalISel)
 set_target_properties(llvm-tblgen PROPERTIES FOLDER "Tablegenning")

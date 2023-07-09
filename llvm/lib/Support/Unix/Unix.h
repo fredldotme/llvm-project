@@ -30,7 +30,9 @@
 #include <cstring>
 #include <string>
 #include <sys/types.h>
+#ifndef LLVM_WASI_WEBASSEMBLY
 #include <sys/wait.h>
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

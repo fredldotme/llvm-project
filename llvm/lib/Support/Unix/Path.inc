@@ -32,7 +32,9 @@
 #endif
 
 #include <dirent.h>
+#ifndef LLVM_WASI_WEBASSEMBLY
 #include <pwd.h>
+#endif
 #include <sys/file.h>
 
 #ifdef __APPLE__
@@ -75,7 +77,8 @@ extern char **environ;
 
 #include <sys/types.h>
 #if !defined(__APPLE__) && !defined(__OpenBSD__) && !defined(__FreeBSD__) &&   \
-    !defined(__linux__) && !defined(__FreeBSD_kernel__) && !defined(_AIX)
+    !defined(__linux__) && !defined(__FreeBSD_kernel__) && !defined(_AIX) &&   \
+    !defined(LLVM_WASI_WEBASSEMBLY)
 #include <sys/statvfs.h>
 #define STATVFS statvfs
 #define FSTATVFS fstatvfs
@@ -105,7 +108,9 @@ extern char **environ;
 typedef uint_t uint;
 #include <sys/vmount.h>
 #else
+#ifndef LLVM_WASI_WEBASSEMBLY
 #include <sys/mount.h>
+#endif
 #endif
 #define STATVFS statfs
 #define FSTATVFS fstatfs
@@ -340,6 +345,11 @@ char exe_path[PATH_MAX];
   char link_path[PATH_MAX];
   if (realpath(DLInfo.dli_fname, link_path))
     return link_path;
+#elif defined(LLVM_WASI_WEBASSEMBLY)
+  // Same as for iOS
+  char exe_path[PATH_MAX];
+  sprintf(exe_path, "%s/Library/usr/bin/%s", ::getenv("HOME"), argv0); 
+  return exe_path;
 #else
 #error GetMainExecutable is not implemented on this host yet.
 #endif
@@ -363,6 +373,7 @@ uint32_t file_status::getLinkCount() const {
 }
 
 ErrorOr<space_info> disk_space(const Twine &Path) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   struct STATVFS Vfs;
   if (::STATVFS(const_cast<char *>(Path.str().c_str()), &Vfs))
     return std::error_code(errno, std::generic_category());
@@ -372,6 +383,10 @@ ErrorOr<space_info> disk_space(const Twine &Path) {
   SpaceInfo.free = static_cast<uint64_t>(Vfs.f_bfree) * FrSize;
   SpaceInfo.available = static_cast<uint64_t>(Vfs.f_bavail) * FrSize;
   return SpaceInfo;
+#else
+  space_info SpaceInfo;
+  return SpaceInfo;
+#endif
 }
 
 std::error_code current_path(SmallVectorImpl<char> &result) {
@@ -560,26 +575,36 @@ static bool is_local_impl(struct STATVFS &Vfs) {
   // The file system can have an arbitrary structure on z/OS; must go with the
   // conservative answer.
   return false;
-#else
+#elif !defined(LLVM_WASI_WEBASSEMBLY)
   return !!(STATVFS_F_FLAG(Vfs) & MNT_LOCAL);
+#else
+  return false;
 #endif
 }
 
 std::error_code is_local(const Twine &Path, bool &Result) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   struct STATVFS Vfs;
   if (::STATVFS(const_cast<char *>(Path.str().c_str()), &Vfs))
     return std::error_code(errno, std::generic_category());
 
   Result = is_local_impl(Vfs);
+#else
+  Result = true;
+#endif
   return std::error_code();
 }
 
 std::error_code is_local(int FD, bool &Result) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   struct STATVFS Vfs;
   if (::FSTATVFS(FD, &Vfs))
     return std::error_code(errno, std::generic_category());
 
   Result = is_local_impl(Vfs);
+#else
+  Result = true;
+#endif
   return std::error_code();
 }
 
@@ -679,6 +704,7 @@ static void expandTildeExpr(SmallVectorImpl<char> &Path) {
     return;
   }
 
+#ifndef LLVM_WASI_WEBASSEMBLY
   // This is a string of the form ~username/, look up this user's entry in the
   // password database.
   struct passwd *Entry = nullptr;
@@ -694,6 +720,7 @@ static void expandTildeExpr(SmallVectorImpl<char> &Path) {
   Path.clear();
   Path.append(Entry->pw_dir, Entry->pw_dir + strlen(Entry->pw_dir));
   llvm::sys::path::append(Path, Storage);
+#endif
 }
 
 
@@ -771,25 +798,33 @@ std::error_code status(int FD, file_status &Result) {
 }
 
 unsigned getUmask() {
+#ifndef LLVM_WASI_WEBASSEMBLY
   // Chose arbitary new mask and reset the umask to the old mask.
   // umask(2) never fails so ignore the return of the second call.
   unsigned Mask = ::umask(0);
   (void) ::umask(Mask);
+#else
+  unsigned Mask = 0;
+#endif
   return Mask;
 }
 
 std::error_code setPermissions(const Twine &Path, perms Permissions) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   SmallString<128> PathStorage;
   StringRef P = Path.toNullTerminatedStringRef(PathStorage);
 
   if (::chmod(P.begin(), Permissions))
     return std::error_code(errno, std::generic_category());
+#endif
   return std::error_code();
 }
 
 std::error_code setPermissions(int FD, perms Permissions) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   if (::fchmod(FD, Permissions))
     return std::error_code(errno, std::generic_category());
+#endif
   return std::error_code();
 }
 
@@ -830,6 +865,7 @@ std::error_code setLastAccessAndModificationTime(int FD, TimePoint<> AccessTime,
 
 std::error_code mapped_file_region::init(int FD, uint64_t Offset,
                                          mapmode Mode) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   assert(Size != 0);
 
   int flags = (Mode == readwrite) ? MAP_SHARED : MAP_PRIVATE;
@@ -861,6 +897,10 @@ std::error_code mapped_file_region::init(int FD, uint64_t Offset,
   if (Mapping == MAP_FAILED)
     return std::error_code(errno, std::generic_category());
   return std::error_code();
+#else
+  errno = EINVAL;
+  return std::error_code(errno, std::generic_category());
+#endif
 }
 
 mapped_file_region::mapped_file_region(int fd, mapmode mode, size_t length,
@@ -873,13 +913,15 @@ mapped_file_region::mapped_file_region(int fd, mapmode mode, size_t length,
 }
 
 void mapped_file_region::unmapImpl() {
+#ifndef LLVM_WASI_WEBASSEMBLY
   if (Mapping)
     ::munmap(Mapping, Size);
+#endif
 }
 
 void mapped_file_region::dontNeedImpl() {
   assert(Mode == mapped_file_region::readonly);
-#if defined(__MVS__) || defined(_AIX)
+#if defined(__MVS__) || defined(_AIX) || defined(LLVM_WASI_WEBASSEMBLY)
   // If we don't have madvise, or it isn't beneficial, treat this as a no-op.
   return;
 #else
@@ -921,7 +963,7 @@ static file_type direntType(dirent* Entry) {
   // Note that while glibc provides a macro to see if this is supported,
   // _DIRENT_HAVE_D_TYPE, it's not defined on BSD/Mac, so we test for the
   // d_type-to-mode_t conversion macro instead.
-#if defined(DTTOIF)
+#if defined(DTTOIF) && !defined(LLVM_WASI_WEBASSEMBLY)
   return typeForMode(DTTOIF(Entry->d_type));
 #else
   // Other platforms such as Solaris require a stat() to get the type.
@@ -1150,9 +1192,11 @@ std::error_code openFileForRead(const Twine &Name, int &ResultFD,
     SmallString<128> Storage;
     StringRef P = Name.toNullTerminatedStringRef(Storage);
 
+#ifndef LLVM_WASI_WEBASSEMBLY
     // Use ::realpath to get the real path name
     if (::realpath(P.begin(), Buffer) != nullptr)
       RealPath->append(Buffer, Buffer + strlen(Buffer));
+#endif
   }
 #endif
   return std::error_code();
@@ -1212,6 +1256,7 @@ Expected<size_t> readNativeFileSlice(file_t FD, MutableArrayRef<char> Buf,
 }
 
 std::error_code tryLockFile(int FD, std::chrono::milliseconds Timeout) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   auto Start = std::chrono::steady_clock::now();
   auto End = Start + Timeout;
   do {
@@ -1228,10 +1273,12 @@ std::error_code tryLockFile(int FD, std::chrono::milliseconds Timeout) {
       return std::error_code(Error, std::generic_category());
     usleep(1000);
   } while (std::chrono::steady_clock::now() < End);
+#endif
   return make_error_code(errc::no_lock_available);
 }
 
 std::error_code lockFile(int FD) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   struct flock Lock;
   memset(&Lock, 0, sizeof(Lock));
   Lock.l_type = F_WRLCK;
@@ -1242,9 +1289,13 @@ std::error_code lockFile(int FD) {
     return std::error_code();
   int Error = errno;
   return std::error_code(Error, std::generic_category());
+#else
+  return std::error_code();
+#endif
 }
 
 std::error_code unlockFile(int FD) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   struct flock Lock;
   Lock.l_type = F_UNLCK;
   Lock.l_whence = SEEK_SET;
@@ -1252,6 +1303,7 @@ std::error_code unlockFile(int FD) {
   Lock.l_len = 0;
   if (::fcntl(FD, F_SETLK, &Lock) != -1)
     return std::error_code();
+#endif
   return std::error_code(errno, std::generic_category());
 }
 
@@ -1303,6 +1355,8 @@ std::error_code remove_directories(const Twine &path, bool IgnoreErrors) {
 std::error_code real_path(const Twine &path, SmallVectorImpl<char> &dest,
                           bool expand_tilde) {
   dest.clear();
+
+#ifndef LLVM_WASI_WEBASSEMBLY
   if (path.isTriviallyEmpty())
     return std::error_code();
 
@@ -1319,14 +1373,18 @@ std::error_code real_path(const Twine &path, SmallVectorImpl<char> &dest,
   if (::realpath(P.begin(), Buffer) == nullptr)
     return std::error_code(errno, std::generic_category());
   dest.append(Buffer, Buffer + strlen(Buffer));
+#endif
+
   return std::error_code();
 }
 
 std::error_code changeFileOwnership(int FD, uint32_t Owner, uint32_t Group) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   auto FChown = [&]() { return ::fchown(FD, Owner, Group); };
   // Retry if fchown call fails due to interruption.
   if ((sys::RetryAfterSignal(-1, FChown)) < 0)
     return std::error_code(errno, std::generic_category());
+#endif
   return std::error_code();
 }
 
@@ -1336,11 +1394,13 @@ namespace path {
 
 bool home_directory(SmallVectorImpl<char> &result) {
   char *RequestedDir = getenv("HOME");
+#ifndef LLVM_WASI_WEBASSEMBLY
   if (!RequestedDir) {
     struct passwd *pw = getpwuid(getuid());
     if (pw && pw->pw_dir)
       RequestedDir = pw->pw_dir;
   }
+#endif
   if (!RequestedDir)
     return false;
 

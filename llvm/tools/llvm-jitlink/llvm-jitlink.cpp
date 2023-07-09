@@ -53,7 +53,7 @@
 #include <list>
 #include <string>
 
-#ifdef LLVM_ON_UNIX
+#if defined(LLVM_ON_UNIX) && !defined(LLVM_WASI_WEBASSEMBLY)
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>

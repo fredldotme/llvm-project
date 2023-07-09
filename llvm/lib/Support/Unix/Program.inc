@@ -102,6 +102,7 @@ ErrorOr<std::string> sys::findProgramByName(StringRef Name,
 }
 
 static bool RedirectIO(Optional<StringRef> Path, int FD, std::string* ErrMsg) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   if (!Path) // Noop
     return false;
   std::string File;
@@ -127,6 +128,9 @@ static bool RedirectIO(Optional<StringRef> Path, int FD, std::string* ErrMsg) {
   }
   close(InFD);      // Close the original FD
   return false;
+#else
+  return true;
+#endif
 }
 
 #ifdef HAVE_POSIX_SPAWN
@@ -184,6 +188,7 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
                     ArrayRef<Optional<StringRef>> Redirects,
                     unsigned MemoryLimit, std::string *ErrMsg,
                     BitVector *AffinityMask) {
+#ifndef LLVM_WASI_WEBASSEMBLY
   if (!llvm::sys::fs::exists(Program)
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
        && !ios_executable(Program.str().c_str())  // one of the commands in ios_system
@@ -280,10 +285,14 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
     PI.Process = PID;
 
     return true;
+#else
+    return false;
+#endif
   }
 #endif
 
   // Create a child process.
+#ifndef LLVM_WASI_WEBASSEMBLY
   int child = fork();
   switch (child) {
     // An error occurred:  Return to the caller.
@@ -346,9 +355,12 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
       break;
 #endif
   }
+#endif
 
+#ifndef LLVM_WASI_WEBASSEMBLY
   PI.Pid = child;
   PI.Process = child;
+#endif
 
   return true;
 }
@@ -356,7 +368,7 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
 namespace llvm {
 namespace sys {
 
-#ifndef _AIX
+#if !defined(_AIX) && !defined(LLVM_WASI_WEBASSEMBLY)
 using ::wait4;
 #else
 static pid_t (wait4)(pid_t pid, int *status, int options, struct rusage *usage);
@@ -402,9 +414,14 @@ pid_t (llvm::sys::wait4)(pid_t pid, int *status, int options,
 ProcessInfo llvm::sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
                             bool WaitUntilTerminates, std::string *ErrMsg,
                             Optional<ProcessStatistics> *ProcStat) {
+
   int status;
   ProcessInfo WaitResult;
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+#ifdef LLVM_WASI_WEBASSEMBLY
+  WaitResult.Pid = 12345;
+  WaitResult.ReturnCode = -1;
+  return WaitResult;
+#elif (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
   // iOS: just wait for the process to terminate
   // TODO: check whether the more sophisticated version below works
   // with latest iOS_system.
@@ -487,6 +504,7 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
   }
 #endif // (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
 
+#ifndef LLVM_WASI_WEBASSEMBLY
   // Return the proper exit status. Detect error conditions
   // so we can return -1 for them and set ErrMsg informatively.
   int result = 0;
@@ -518,6 +536,8 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
     // signal during execution as opposed to failing to execute.
     WaitResult.ReturnCode = -2;
   }
+#endif
+
   return WaitResult;
 }
 

@@ -1,5 +1,7 @@
 #include "config.h"
 #include "unwind.h"
+#include <stdbool.h>
+#include <threads.h>
 
 #ifdef __USING_WASM_EXCEPTIONS__
 
@@ -19,7 +21,7 @@ struct _Unwind_LandingPadContext {
 
 // Communication channel between compiler-generated user code and personality
 // function
-struct _Unwind_LandingPadContext __wasm_lpad_context;
+thread_local struct _Unwind_LandingPadContext __wasm_lpad_context;
 
 /// Calls to this function is in landing pads in compiler-generated user code.
 /// In other EH schemes, stack unwinding is done by libunwind library, which
@@ -40,7 +42,7 @@ _Unwind_Reason_Code _Unwind_CallPersonality(void *exception_ptr) {
   // Call personality function. Wasm does not have two-phase unwinding, so we
   // only do the cleanup phase.
   _Unwind_Reason_Code ret = __gxx_personality_wasm0(
-      1, _UA_CLEANUP_PHASE, exception_object->exception_class, exception_object,
+      1, _UA_SEARCH_PHASE, exception_object->exception_class, exception_object,
       (struct _Unwind_Context *)&__wasm_lpad_context);
   return ret;
 }

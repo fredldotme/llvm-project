@@ -467,8 +467,10 @@ void llvm::sys::DontRemoveFileOnSignal(StringRef Filename) {
 /// handler it is.
 void llvm::sys::AddSignalHandler(sys::SignalHandlerCallback FnPtr,
                                  void *Cookie) { // Signal-safe.
+#if !TARGET_OS_IPHONE
   insertSignalHandler(FnPtr, Cookie);
   RegisterHandlers();
+#endif
 }
 
 #if defined(HAVE_BACKTRACE) && ENABLE_BACKTRACES && HAVE_LINK_H &&    \

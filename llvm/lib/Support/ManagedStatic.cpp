@@ -19,7 +19,7 @@
 #include <TargetConditionals.h>
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
 #include <llvm-c/Support.h>
-#include "ios_error.h"
+#include <nosystem.h>
 #undef write
 #undef exit
 #endif

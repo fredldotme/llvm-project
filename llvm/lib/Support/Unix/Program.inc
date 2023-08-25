@@ -50,12 +50,12 @@
 #include <TargetConditionals.h>
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
 #undef HAVE_POSIX_SPAWN // function is present, but not working
-#include "ios_error.h"
+#include <nosystem.h>
 #include <libgen.h>
 #undef getenv 
-#define fork ios_fork
 #undef _exit
 #define _exit exit
+#define fork nosystem_fork
 #endif
 #endif
 
@@ -186,16 +186,14 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
                     ArrayRef<std::optional<StringRef>> Redirects,
                     unsigned MemoryLimit, std::string *ErrMsg,
                     BitVector *AffinityMask) {
+#if (!TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR)
   if (!llvm::sys::fs::exists(Program)) {
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-       && !ios_executable(Program.str().c_str())  // one of the commands in ios_system
-#endif
-  ) {
     if (ErrMsg)
       *ErrMsg = std::string("Executable \"") + Program.str() +
                 std::string("\" doesn't exist!");
     return false;
   }
+#endif
 
   assert(!AffinityMask && "Starting a process with an affinity mask is "
                           "currently not supported on Unix!");
@@ -286,7 +284,11 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
 #endif
 
   // Create a child process.
+#if (!TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR)
   int child = fork();
+#else
+  int child = 0;
+#endif
   switch (child) {
   // An error occurred:  Return to the caller.
   case -1:

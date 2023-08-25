@@ -47,6 +47,14 @@
 #include "llvm/Support/DataTypes.h"
 #endif
 
+#include <TargetConditionals.h>
+#if defined(TARGET_OS_IPHONE)
+extern "C" {
+extern int nosystem_system(const char* cmd);
+#define system nosystem_system
+}
+#endif
+
 using namespace lldb;
 using namespace llvm;
 

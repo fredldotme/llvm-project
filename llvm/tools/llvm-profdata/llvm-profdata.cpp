@@ -48,7 +48,7 @@
 #ifdef __APPLE__
 #include <TargetConditionals.h>
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-#include "ios_error.h"
+#include <nosystem.h>
 #undef write
 #endif
 #endif
@@ -455,7 +455,7 @@ static void exitWithError(Twine Message, std::string Whence = "",
     WithColor::note() << Hint << "\n";
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
   llvm_shutdown(); 
-  ios_exit(1);
+  nosystem_exit(1);
 #else
   ::exit(1);
 #endif

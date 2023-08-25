@@ -22,7 +22,7 @@
 #ifdef __APPLE__
 #include <TargetConditionals.h>
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-#include "ios_error.h"
+#include <nosystem.h>
 #endif
 #endif
 
@@ -64,7 +64,7 @@ void PrintFatalNote(const Twine &Msg) {
   // The following call runs the file cleanup handlers.
   sys::RunInterruptHandlers();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  ios_exit(1); 
+  nosystem_exit(1); 
 #else
   std::exit(1);
 #endif
@@ -75,7 +75,7 @@ void PrintFatalNote(ArrayRef<SMLoc> NoteLoc, const Twine &Msg) {
   // The following call runs the file cleanup handlers.
   sys::RunInterruptHandlers();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  ios_exit(1); 
+  nosystem_exit(1); 
 #else
   std::exit(1);
 #endif
@@ -88,7 +88,7 @@ void PrintFatalNote(const Record *Rec, const Twine &Msg) {
   // The following call runs the file cleanup handlers.
   sys::RunInterruptHandlers();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  ios_exit(1); 
+  nosystem_exit(1); 
 #else
   std::exit(1);
 #endif
@@ -101,7 +101,7 @@ void PrintFatalNote(const RecordVal *RecVal, const Twine &Msg) {
   // The following call runs the file cleanup handlers.
   sys::RunInterruptHandlers();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  ios_exit(1); 
+  nosystem_exit(1); 
 #else
   std::exit(1);
 #endif
@@ -150,7 +150,7 @@ void PrintFatalError(const Twine &Msg) {
   // The following call runs the file cleanup handlers.
   sys::RunInterruptHandlers();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  ios_exit(1); 
+  nosystem_exit(1); 
 #else
   std::exit(1);
 #endif
@@ -161,7 +161,7 @@ void PrintFatalError(ArrayRef<SMLoc> ErrorLoc, const Twine &Msg) {
   // The following call runs the file cleanup handlers.
   sys::RunInterruptHandlers();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  ios_exit(1); 
+  nosystem_exit(1); 
 #else
   std::exit(1);
 #endif
@@ -174,7 +174,7 @@ void PrintFatalError(const Record *Rec, const Twine &Msg) {
   // The following call runs the file cleanup handlers.
   sys::RunInterruptHandlers();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  ios_exit(1); 
+  nosystem_exit(1); 
 #else
   std::exit(1);
 #endif
@@ -187,7 +187,7 @@ void PrintFatalError(const RecordVal *RecVal, const Twine &Msg) {
   // The following call runs the file cleanup handlers.
   sys::RunInterruptHandlers();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  ios_exit(1); 
+  nosystem_exit(1); 
 #else
   std::exit(1);
 #endif

@@ -40,8 +40,8 @@
 #ifdef __APPLE__
 #include <TargetConditionals.h>
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-#include "ios_error.h"
-#define abort() ios_exit(1)
+#include <nosystem.h>
+#define abort() nosystem_exit(1)
 #endif
 #endif
 
@@ -119,7 +119,7 @@ void llvm::report_fatal_error(const Twine &Reason, bool GenCrashDiag) {
     OS << "LLVM ERROR: " << Reason << "\n";
     StringRef MessageStr = OS.str();
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-    ssize_t written = ::write(fileno(thread_stderr), MessageStr.data(), MessageStr.size());
+    ssize_t written = ::write(fileno(nosystem_stderr), MessageStr.data(), MessageStr.size());
 #else    
     ssize_t written = ::write(2, MessageStr.data(), MessageStr.size());
 #endif
@@ -179,9 +179,9 @@ void llvm::report_bad_alloc_error(const char *Reason, bool GenCrashDiag) {
   const char *OOMMessage = "LLVM ERROR: out of memory\n";
   const char *Newline = "\n";
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-    (void) ::write(fileno(thread_stderr), OOMMessage, strlen(OOMMessage));
-    (void) ::write(fileno(thread_stderr), Reason, strlen(Reason));
-    (void) ::write(fileno(thread_stderr), Newline, strlen(Newline));
+    (void) ::write(fileno(nosystem_stderr), OOMMessage, strlen(OOMMessage));
+    (void) ::write(fileno(nosystem_stderr), Reason, strlen(Reason));
+    (void) ::write(fileno(nosystem_stderr), Newline, strlen(Newline));
 #else      
   (void)!::write(2, OOMMessage, strlen(OOMMessage));
   (void)!::write(2, Reason, strlen(Reason));

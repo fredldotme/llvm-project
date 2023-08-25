@@ -28,11 +28,11 @@ using namespace sys;
 #ifdef __APPLE__ 
 #include <TargetConditionals.h>
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
-#include "ios_error.h"
+#include <nosystem.h>
 #undef exit
 #undef getenv
-#define exit(a) { llvm_shutdown(); ios_exit(a); }
-#define isatty ios_isatty 
+#define exit(a) { llvm_shutdown(); nosystem_exit(a); }
+//#define isatty nosystem_isatty
 #endif
 #endif
 
@@ -108,7 +108,7 @@ bool Process::AreCoreFilesPrevented() { return coreFilesPrevented; }
     CRC->HandleExit(RetCode);
 
 #if TARGET_OS_IPHONE
-  ios_exit(RetCode); 
+  nosystem_exit(RetCode); 
 #else
   if (NoCleanup)
     ExitNoCleanup(RetCode);

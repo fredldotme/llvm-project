@@ -199,7 +199,7 @@ std::string getMainExecutable(const char *argv0, void *MainAddr) {
 #if defined(__APPLE__)
 char exe_path[PATH_MAX];
 #if TARGET_OS_IPHONE || TARGET_OS_SIMULATOR
-  // On iOS, we can't get the actual executable path (because of ios_system)
+  // On iOS, we can't get the actual executable path (because of ios_system/no_system)
   // We pretend it's in $HOME/Library/usr/bin
   sprintf(exe_path, "%s/Library/usr/bin/%s", ::getenv("HOME"), argv0);
   return exe_path;
@@ -1168,9 +1168,9 @@ Expected<file_t> openNativeFileForRead(const Twine &Name, OpenFlags Flags,
 }
 
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-	file_t getStdinHandle() { return fileno(thread_stdin); }
-	file_t getStdoutHandle() { return fileno(thread_stdout); }
-	file_t getStderrHandle() { return fileno(thread_stderr); }
+	file_t getStdinHandle() { return fileno(nosystem_stdin); }
+	file_t getStdoutHandle() { return fileno(nosystem_stdout); }
+	file_t getStderrHandle() { return fileno(nosystem_stderr); }
 #else
 	file_t getStdinHandle() { return 0; }
 	file_t getStdoutHandle() { return 1; }

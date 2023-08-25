@@ -4760,11 +4760,14 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   if (C.getDriver().embedBitcodeMarkerOnly() && !IsUsingLTO)
     CmdArgs.push_back("-fembed-bitcode=marker");
 
+#if 0
   // We normally speed up the clang process a bit by skipping destructors at
   // exit, but when we're generating diagnostics we can rely on some of the
   // cleanup.
   if (!C.isForDiagnostics())
     CmdArgs.push_back("-disable-free");
+#endif
+
   CmdArgs.push_back("-clear-ast-before-backend");
 
 #ifdef NDEBUG

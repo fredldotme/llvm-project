@@ -59,7 +59,7 @@
 #ifdef __APPLE__
 #include <TargetConditionals.h>
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-#include "ios_error.h"
+#include <nosystem.h>
 #undef write
 #endif
 #endif
@@ -777,10 +777,10 @@ void raw_fd_ostream::write_impl(const char *Ptr, size_t Size) {
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
        ssize_t ret; 
        if (FD == STDOUT_FILENO) {
-               ret = ::write(fileno(thread_stdout), Ptr, ChunkSize); 
+               ret = ::write(fileno(nosystem_stdout), Ptr, ChunkSize); 
        }
        else if  (FD == STDERR_FILENO) {
-               ret = ::write(fileno(thread_stderr), Ptr, ChunkSize); 
+               ret = ::write(fileno(nosystem_stderr), Ptr, ChunkSize); 
        }
        else ret = ::write(FD, Ptr, ChunkSize);
 #else

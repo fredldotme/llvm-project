@@ -58,10 +58,7 @@
 #ifdef __APPLE__
 #include <TargetConditionals.h>
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-#include <CoreFoundation/CoreFoundation.h>
-#include <objc/objc.h>
-#include <objc/message.h>
-#include "ios_error.h"
+#include <nosystem.h>
 #include <fcntl.h>
 #endif
 #endif
@@ -156,7 +153,7 @@ static ffi_type *ffiTypeFor(Type *Ty) {
   // TODO: Support other types such as StructTyID, ArrayTyID, OpaqueTyID, etc.
   // So, for Swift, it's a StructTyID that breaks things. 
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  fprintf(thread_stderr, "Type error: type= %d \n", Ty->getTypeID());
+  fprintf(nosystem_stderr, "Type error: type= %d \n", Ty->getTypeID());
 #endif
   report_fatal_error("Type could not be mapped for use with libffi.");
   return NULL;
@@ -208,7 +205,7 @@ static void *ffiValueFor(Type *Ty, const GenericValue &AV,
   }
   // TODO: Support other types such as StructTyID, ArrayTyID, OpaqueTyID, etc.
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  fprintf(thread_stderr, "Type value error: type= %d \n", Ty->getTypeID());
+  fprintf(nosystem_stderr, "Type value error: type= %d \n", Ty->getTypeID());
 #endif
   report_fatal_error("Type value could not be mapped for use with libffi.");
   return NULL;
@@ -482,8 +479,8 @@ static GenericValue lle_X_scanf(FunctionType *FT, ArrayRef<GenericValue> args) {
   GenericValue GV;
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
   outs().flush();
-  fflush(thread_stdout);
-  GV.IntVal = APInt(32, fscanf(thread_stdin, Args[0], Args[1], Args[2], Args[3], Args[4],
+  fflush(nosystem_stdout);
+  GV.IntVal = APInt(32, fscanf(nosystem_stdin, Args[0], Args[1], Args[2], Args[3], Args[4],
                   Args[5], Args[6], Args[7], Args[8], Args[9]));
 #else
   GV.IntVal = APInt(32, scanf( Args[0], Args[1], Args[2], Args[3], Args[4],
@@ -554,38 +551,38 @@ static GenericValue lle_X_open(FunctionType *FT,
 const char* llvm_ios_progname; 
 //   void warn(const char *fmt, ...);
 static GenericValue lle_X_warn(FunctionType *FT, ArrayRef<GenericValue> Args) {
-       fputs(llvm_ios_progname, thread_stderr);
+       fputs(llvm_ios_progname, nosystem_stderr);
        const char *fmt = (const char *)GVTOP(Args[0]);
        if (fmt != NULL)
        {
-               fputs(": ", thread_stderr);
+               fputs(": ", nosystem_stderr);
                char Buffer[10000];
                std::vector<GenericValue> NewArgs;
                NewArgs.push_back(PTOGV((void*)&Buffer[0]));
                NewArgs.insert(NewArgs.end(), Args.begin(), Args.end());
                GenericValue GV = lle_X_sprintf(FT, NewArgs);
-               fputs(Buffer, thread_stderr); 
+               fputs(Buffer, nosystem_stderr); 
        }
-       fputs(": ", thread_stderr);
-       fputs(strerror(errno), thread_stderr);
-       putc('\n', thread_stderr);
+       fputs(": ", nosystem_stderr);
+       fputs(strerror(errno), nosystem_stderr);
+       putc('\n', nosystem_stderr);
        return GenericValue();
 }
 //   void warnx(const char *fmt, ...);
 static GenericValue lle_X_warnx(FunctionType *FT, ArrayRef<GenericValue> Args) {
-       fputs(llvm_ios_progname, thread_stderr);
+       fputs(llvm_ios_progname, nosystem_stderr);
        const char *fmt = (const char *)GVTOP(Args[0]);
        if (fmt != NULL)
        {
-               fputs(": ", thread_stderr);
+               fputs(": ", nosystem_stderr);
                char Buffer[10000];
                std::vector<GenericValue> NewArgs;
                NewArgs.push_back(PTOGV((void*)&Buffer[0]));
                NewArgs.insert(NewArgs.end(), Args.begin(), Args.end());
                GenericValue GV = lle_X_sprintf(FT, NewArgs);
-               fputs(Buffer, thread_stderr); 
+               fputs(Buffer, nosystem_stderr); 
        }
-       putc('\n', thread_stderr);
+       putc('\n', nosystem_stderr);
        return GenericValue();
 }
 // void err(int eval, const char *fmt, ...);

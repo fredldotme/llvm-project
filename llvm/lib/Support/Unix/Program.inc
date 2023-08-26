@@ -56,6 +56,8 @@
 #undef _exit
 #define _exit exit
 #define fork nosystem_fork
+#define execv nosystem_execv
+#define execve nosystem_execve
 #endif
 #endif
 

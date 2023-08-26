@@ -52,6 +52,8 @@
 #include <libgen.h>
 #undef getenv 
 #define fork nosystem_fork
+#define execv nosystem_execv
+#define execve nosystem_execve
 #endif
 #endif
 

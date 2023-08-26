@@ -27,10 +27,10 @@ public:
 
   /// PluginInterface protocol.
   /// \{
-  lldb_private::ConstString GetPluginName() override {
-    return GetPluginNameStatic();
+  llvm::StringRef GetPluginName() override {
+    return GetPluginNameStatic().GetStringRef();
   }
-  uint32_t GetPluginVersion() override { return 1; }
+  uint32_t GetPluginVersion() { return 1; }
   /// \}
 
   WasmDWARFEvaluatorFactory() {}

@@ -37,7 +37,7 @@ void PlatformRemoteWASMServer::Initialize() {
   if (!g_initialized) {
     g_initialized = true;
     PluginManager::RegisterPlugin(
-        PlatformRemoteWASMServer::GetPluginNameStatic(),
+        PlatformRemoteWASMServer::GetPluginNameStatic().GetStringRef(),
         PlatformRemoteWASMServer::GetDescriptionStatic(),
         PlatformRemoteWASMServer::CreateInstance);
   }
@@ -97,8 +97,8 @@ ConstString PlatformRemoteWASMServer::GetPluginNameStatic() {
   return g_name;
 }
 
-ConstString PlatformRemoteWASMServer::GetPluginName() {
-  return GetPluginNameStatic();
+llvm::StringRef PlatformRemoteWASMServer::GetPluginName() {
+  return GetPluginNameStatic().GetStringRef();
 }
 
 const char *PlatformRemoteWASMServer::GetDescriptionStatic() {

@@ -23,9 +23,9 @@ public:
   size_t ConnectToWaitingProcesses(lldb_private::Debugger &debugger,
                                    lldb_private::Status &error) override;
   
-  bool GetSupportedArchitectureAtIndex(uint32_t idx, ArchSpec &arch) override;
+  bool GetSupportedArchitectureAtIndex(uint32_t idx, ArchSpec &arch);
 
-  ConstString GetPluginName() override;
+  llvm::StringRef GetPluginName() override;
 
   PlatformRemoteWASMServer();
 

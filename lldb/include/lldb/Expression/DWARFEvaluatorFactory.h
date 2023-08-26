@@ -30,9 +30,9 @@ public:
 
   /// PluginInterface protocol.
   /// \{
-  ConstString GetPluginName() override;
+  virtual llvm::StringRef GetPluginName() override;
 
-  uint32_t GetPluginVersion() override { return 1; }
+  uint32_t GetPluginVersion() { return 1; }
   /// \}
 
   DWARFEvaluatorFactory() {}

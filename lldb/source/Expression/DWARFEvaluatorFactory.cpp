@@ -17,9 +17,9 @@ using namespace lldb;
 using namespace lldb_private;
 
 // PluginInterface protocol
-lldb_private::ConstString DWARFEvaluatorFactory::GetPluginName() {
+llvm::StringRef DWARFEvaluatorFactory::GetPluginName() {
   static ConstString g_name("vendor-default");
-  return g_name;
+  return g_name.GetStringRef();
 }
 
 // FindPlugin

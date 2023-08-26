@@ -32,7 +32,7 @@ void ProcessWasm::Initialize() {
   static llvm::once_flag g_once_flag;
 
   llvm::call_once(g_once_flag, []() {
-    PluginManager::RegisterPlugin(GetPluginNameStatic(),
+    PluginManager::RegisterPlugin(GetPluginNameStatic().GetStringRef(),
                                   GetPluginDescriptionStatic(), CreateInstance,
                                   DebuggerInitialize);
   });
@@ -43,7 +43,7 @@ void ProcessWasm::DebuggerInitialize(Debugger &debugger) {
 }
 
 // PluginInterface
-ConstString ProcessWasm::GetPluginName() { return GetPluginNameStatic(); }
+llvm::StringRef ProcessWasm::GetPluginName() { return GetPluginNameStatic().GetStringRef(); }
 
 uint32_t ProcessWasm::GetPluginVersion() { return 1; }
 

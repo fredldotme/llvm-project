@@ -64,8 +64,8 @@ public:
 
   /// PluginInterface protocol.
   /// \{
-  ConstString GetPluginName() override;
-  uint32_t GetPluginVersion() override;
+  llvm::StringRef GetPluginName() override;
+  uint32_t GetPluginVersion();
   /// \}
 
   /// Process protocol.

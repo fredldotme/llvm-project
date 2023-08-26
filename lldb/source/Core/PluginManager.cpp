@@ -1639,7 +1639,7 @@ static DWARFEvaluatorFactoryInstances &GetDWARFEvaluatorFactoryInstances() {
 bool PluginManager::RegisterPlugin(
     ConstString name, const char *description,
     DWARFEvaluatorFactoryCreateInstance create_callback) {
-  return GetDWARFEvaluatorFactoryInstances().RegisterPlugin(name, description,
+  return GetDWARFEvaluatorFactoryInstances().RegisterPlugin(name.GetStringRef(), description,
                                                             create_callback);
 }
 

@@ -57,6 +57,15 @@ void DynamicLoaderWasmDYLD::DidAttach() {
   // Ask the process for the list of loaded WebAssembly modules.
   auto error = m_process->LoadModules();
   LLDB_LOG_ERROR(log, std::move(error), "Couldn't load modules: {0}");
+
+  // TODO: multi-modules support ?
+  Target &target = m_process->GetTarget();
+  const ModuleList &modules = target.GetImages();
+  ModuleSP module_sp(modules.GetModuleAtIndex(0));
+  // module_sp is nullptr if without libxml2
+  if(module_sp) {
+    module_sp->PreloadSymbols();
+  }
 }
 
 ThreadPlanSP DynamicLoaderWasmDYLD::GetStepThroughTrampolinePlan(Thread &thread,

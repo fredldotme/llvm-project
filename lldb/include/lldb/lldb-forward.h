@@ -78,6 +78,7 @@ class Disassembler;
 class DumpValueObjectOptions;
 class DynamicCheckerFunctions;
 class DynamicLoader;
+class DWARFEvaluatorFactory;
 class Editline;
 class EmulateInstruction;
 class Environment;

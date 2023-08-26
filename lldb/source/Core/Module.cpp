@@ -17,6 +17,7 @@
 #include "lldb/Core/ModuleSpec.h"
 #include "lldb/Core/SearchFilter.h"
 #include "lldb/Core/Section.h"
+#include "lldb/Expression/DWARFEvaluatorFactory.h"
 #include "lldb/Host/FileSystem.h"
 #include "lldb/Host/Host.h"
 #include "lldb/Host/HostInfo.h"
@@ -1692,4 +1693,10 @@ DataFileCache *Module::GetIndexCache() {
   // called as other threads still use the result of this function
   static DataFileCache *g_data_file_cache = new DataFileCache(ModuleList::GetGlobalModuleListProperties().GetLLDBIndexCachePath().GetPath());
   return g_data_file_cache;
+}
+
+DWARFEvaluatorFactory *Module::GetDWARFExpressionEvaluatorFactory() {
+  if (!m_dwarf_evaluator_factory)
+    m_dwarf_evaluator_factory = DWARFEvaluatorFactory::FindPlugin(this);
+  return m_dwarf_evaluator_factory.get();
 }

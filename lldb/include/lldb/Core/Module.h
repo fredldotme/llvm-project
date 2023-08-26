@@ -42,6 +42,7 @@
 
 namespace lldb_private {
 class CompilerDeclContext;
+class DWARFEvaluatorFactory;
 class Function;
 class Log;
 class ObjectFile;
@@ -882,6 +883,8 @@ public:
   /// ElapsedTime RAII object.
   StatsDuration &GetSymtabIndexTime() { return m_symtab_index_time; }
 
+  DWARFEvaluatorFactory *GetDWARFExpressionEvaluatorFactory();
+
   /// \class LookupInfo Module.h "lldb/Core/Module.h"
   /// A class that encapsulates name lookup information.
   ///
@@ -1052,6 +1055,8 @@ protected:
   /// an object file and a symbol file which both have symbol tables. The parse
   /// time for the symbol tables can be aggregated here.
   StatsDuration m_symtab_index_time{0.0};
+
+  std::unique_ptr<DWARFEvaluatorFactory> m_dwarf_evaluator_factory;
 
   /// Resolve a file or load virtual address.
   ///

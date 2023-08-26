@@ -46,6 +46,8 @@ lldb::UnixSignalsSP UnixSignals::Create(const ArchSpec &arch) {
     return std::make_shared<FreeBSDSignals>();
   case llvm::Triple::NetBSD:
     return std::make_shared<NetBSDSignals>();
+  case llvm::Triple::WASI:
+    return std::make_shared<LinuxSignals>();
   default:
     return std::make_shared<UnixSignals>();
   }

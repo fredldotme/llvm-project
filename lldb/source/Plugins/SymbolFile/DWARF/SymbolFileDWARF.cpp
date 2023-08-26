@@ -3309,8 +3309,13 @@ VariableSP SymbolFileDWARF::ParseVariableDIE(const SymbolContext &sc,
           GetDWARFDeclContext(die).GetQualifiedNameAsConstString().GetCString();
   }
 
-  if (tag == DW_TAG_formal_parameter)
+  if (tag == DW_TAG_formal_parameter) {
     scope = eValueTypeVariableArgument;
+    // For Wasm dwarft, pamameter may don't have location attr, 
+    // so set module here
+    if (!location.GetModule())
+      location.SetModule(module);
+  }
   else {
     // DWARF doesn't specify if a DW_TAG_variable is a local, global
     // or static variable, so we have to do a little digging:

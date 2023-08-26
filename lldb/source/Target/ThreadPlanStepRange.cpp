@@ -334,7 +334,10 @@ bool ThreadPlanStepRange::SetNextBranchBreakpoint() {
     // If we didn't find a branch, run to the end of the range.
     if (branch_index == UINT32_MAX) {
       uint32_t last_index = instructions->GetSize() - 1;
-      if (last_index - pc_index > 1) {
+      /* This line causes the "step over was treated as step in" issue, we
+       * modify it as a workaround */
+      /* The origin line is: if (last_index - pc_index > 1) { */
+      if (last_index - pc_index >= 1) {
         InstructionSP last_inst =
             instructions->GetInstructionAtIndex(last_index);
         size_t last_inst_size = last_inst->GetOpcode().GetByteSize();

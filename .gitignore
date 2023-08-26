@@ -70,3 +70,4 @@ pythonenv*
 /lldb/docs/python_api/
 xcuserdata/
 *.xcuserstate
+no_system/

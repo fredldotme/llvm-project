@@ -71,30 +71,30 @@ std::string toString(wasm::Symbol::Kind kind) {
 }
 
 namespace wasm {
-DefinedFunction *WasmSym::callCtors;
-DefinedFunction *WasmSym::callDtors;
-DefinedFunction *WasmSym::initMemory;
-DefinedFunction *WasmSym::applyDataRelocs;
-DefinedFunction *WasmSym::applyGlobalRelocs;
-DefinedFunction *WasmSym::applyGlobalTLSRelocs;
-DefinedFunction *WasmSym::initTLS;
-DefinedFunction *WasmSym::startFunction;
-DefinedData *WasmSym::dsoHandle;
-DefinedData *WasmSym::dataEnd;
-DefinedData *WasmSym::globalBase;
-DefinedData *WasmSym::heapBase;
-DefinedData *WasmSym::initMemoryFlag;
-GlobalSymbol *WasmSym::stackPointer;
-GlobalSymbol *WasmSym::tlsBase;
-GlobalSymbol *WasmSym::tlsSize;
-GlobalSymbol *WasmSym::tlsAlign;
-UndefinedGlobal *WasmSym::tableBase;
-DefinedData *WasmSym::definedTableBase;
-UndefinedGlobal *WasmSym::tableBase32;
-DefinedData *WasmSym::definedTableBase32;
-UndefinedGlobal *WasmSym::memoryBase;
-DefinedData *WasmSym::definedMemoryBase;
-TableSymbol *WasmSym::indirectFunctionTable;
+DefinedFunction *WasmSym::callCtors = nullptr;
+DefinedFunction *WasmSym::callDtors = nullptr;
+DefinedFunction *WasmSym::initMemory = nullptr;
+DefinedFunction *WasmSym::applyDataRelocs = nullptr;
+DefinedFunction *WasmSym::applyGlobalRelocs = nullptr;
+DefinedFunction *WasmSym::applyGlobalTLSRelocs = nullptr;
+DefinedFunction *WasmSym::initTLS = nullptr;
+DefinedFunction *WasmSym::startFunction = nullptr;
+DefinedData *WasmSym::dsoHandle = nullptr;
+DefinedData *WasmSym::dataEnd = nullptr;
+DefinedData *WasmSym::globalBase = nullptr;
+DefinedData *WasmSym::heapBase = nullptr;
+DefinedData *WasmSym::initMemoryFlag = nullptr;
+GlobalSymbol *WasmSym::stackPointer = nullptr;
+GlobalSymbol *WasmSym::tlsBase = nullptr;
+GlobalSymbol *WasmSym::tlsSize = nullptr;
+GlobalSymbol *WasmSym::tlsAlign = nullptr;
+UndefinedGlobal *WasmSym::tableBase = nullptr;
+DefinedData *WasmSym::definedTableBase = nullptr;
+UndefinedGlobal *WasmSym::tableBase32 = nullptr;
+DefinedData *WasmSym::definedTableBase32 = nullptr;
+UndefinedGlobal *WasmSym::memoryBase = nullptr;
+DefinedData *WasmSym::definedMemoryBase = nullptr;
+TableSymbol *WasmSym::indirectFunctionTable = nullptr;
 
 WasmSymbolType Symbol::getWasmType() const {
   if (isa<FunctionSymbol>(this))

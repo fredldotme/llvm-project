@@ -818,9 +818,39 @@ static void splitSections() {
   });
 }
 
+static void cleanupWasmSym() {
+  WasmSym::callCtors = nullptr;
+  WasmSym::callDtors = nullptr;
+  WasmSym::initMemory = nullptr;
+  WasmSym::applyDataRelocs = nullptr;
+  WasmSym::applyGlobalRelocs = nullptr;
+  WasmSym::applyGlobalTLSRelocs = nullptr;
+  WasmSym::initTLS = nullptr;
+  WasmSym::startFunction = nullptr;
+  WasmSym::dsoHandle = nullptr;
+  WasmSym::dataEnd = nullptr;
+  WasmSym::globalBase = nullptr;
+  WasmSym::heapBase = nullptr;
+  WasmSym::initMemoryFlag = nullptr;
+  WasmSym::stackPointer = nullptr;
+  WasmSym::tlsBase = nullptr;
+  WasmSym::tlsSize = nullptr;
+  WasmSym::tlsAlign = nullptr;
+  WasmSym::tableBase = nullptr;
+  WasmSym::definedTableBase = nullptr;
+  WasmSym::tableBase32 = nullptr;
+  WasmSym::definedTableBase32 = nullptr;
+  WasmSym::memoryBase = nullptr;
+  WasmSym::definedMemoryBase = nullptr;
+  WasmSym::indirectFunctionTable = nullptr;
+}
+
 void LinkerDriver::linkerMain(ArrayRef<const char *> argsArr) {
   WasmOptTable parser;
   opt::InputArgList args = parser.parse(argsArr.slice(1));
+
+  // Clean up
+  cleanupWasmSym();
 
   // Handle --help
   if (args.hasArg(OPT_help)) {

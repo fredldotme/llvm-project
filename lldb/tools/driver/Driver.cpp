@@ -847,9 +847,6 @@ int main(int argc, char const *argv[])
   signal(SIGINT, sigint_handler);
 #if !defined(_MSC_VER)
   signal(SIGPIPE, SIG_IGN);
-  signal(SIGWINCH, sigwinch_handler);
-  signal(SIGTSTP, sigtstp_handler);
-  signal(SIGCONT, sigcont_handler);
 #endif
 
   int exit_code = 0;

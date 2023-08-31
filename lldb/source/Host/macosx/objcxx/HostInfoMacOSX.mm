@@ -606,11 +606,13 @@ typedef struct dyld_shared_cache_dylib_text_info
     dyld_shared_cache_dylib_text_info;
 }
 
+#if !TARGET_OS_IPHONE
 extern "C" int dyld_shared_cache_iterate_text(
     const uuid_t cacheUuid,
     void (^callback)(const dyld_shared_cache_dylib_text_info *info));
 extern "C" uint8_t *_dyld_get_shared_cache_range(size_t *length);
 extern "C" bool _dyld_get_shared_cache_uuid(uuid_t uuid);
+#endif
 
 namespace {
 class SharedCacheInfo {
@@ -676,7 +678,7 @@ bool SharedCacheInfo::CreateSharedCacheInfoWithInstrospectionSPIs() {
 SharedCacheInfo::SharedCacheInfo() {
   if (CreateSharedCacheInfoWithInstrospectionSPIs())
     return;
-
+#if !TARGET_OS_IPHONE
   size_t shared_cache_size;
   uint8_t *shared_cache_start =
       _dyld_get_shared_cache_range(&shared_cache_size);
@@ -692,6 +694,7 @@ SharedCacheInfo::SharedCacheInfo() {
                 shared_cache_start + info->textSegmentOffset,
                 shared_cache_size - info->textSegmentOffset)};
       });
+#endif
 }
 
 SharedCacheImageInfo

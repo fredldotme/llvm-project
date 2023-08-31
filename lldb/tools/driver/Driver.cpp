@@ -109,10 +109,12 @@ static Driver *g_driver = nullptr;
 // In the Driver::MainLoop, we change the terminal settings.  This function is
 // added as an atexit handler to make sure we clean them up.
 static void reset_stdin_termios() {
+#if !TARGET_OS_IPHONE
   if (g_old_stdin_termios_is_valid) {
     g_old_stdin_termios_is_valid = false;
     ::tcsetattr(STDIN_FILENO, TCSANOW, &g_old_stdin_termios);
   }
+#endif
 }
 
 Driver::Driver()
@@ -441,10 +443,12 @@ std::string EscapeString(std::string arg) {
 }
 
 int Driver::MainLoop() {
+#if !TARGET_OS_IPHONE
   if (::tcgetattr(STDIN_FILENO, &g_old_stdin_termios) == 0) {
     g_old_stdin_termios_is_valid = true;
     atexit(reset_stdin_termios);
   }
+#endif
 
 #ifndef _MSC_VER
   // Disabling stdin buffering with MSVC's 2015 CRT exposes a bug in fgets
@@ -461,12 +465,14 @@ int Driver::MainLoop() {
 
   m_debugger.SetUseExternalEditor(m_option_data.m_use_external_editor);
 
+#if !TARGET_OS_IPHONE
   struct winsize window_size;
   if ((isatty(STDIN_FILENO) != 0) &&
       ::ioctl(STDIN_FILENO, TIOCGWINSZ, &window_size) == 0) {
     if (window_size.ws_col > 0)
       m_debugger.SetTerminalWidth(window_size.ws_col);
   }
+#endif
 
   SBCommandInterpreter sb_interpreter = m_debugger.GetCommandInterpreter();
 
@@ -624,8 +630,16 @@ int Driver::MainLoop() {
   // Now set the input file handle to STDIN and run the command interpreter
   // again in interactive mode or repl mode and let the debugger take ownership
   // of stdin.
+
+#if TARGET_OS_IPHONE
+  const bool ownsStdin = false;
+#else
+  const bool ownsStdin = true;
+#endif
+
+
   if (go_interactive) {
-    m_debugger.SetInputFileHandle(stdin, true);
+    m_debugger.SetInputFileHandle(stdin, ownsStdin);
 
     if (m_option_data.m_repl) {
       const char *repl_options = nullptr;

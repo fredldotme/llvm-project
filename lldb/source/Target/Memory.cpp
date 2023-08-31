@@ -181,7 +181,7 @@ size_t MemoryCache::Read(addr_t addr, void *dst, size_t dst_len,
       BlockMap::const_iterator pos = m_L2_cache.find(curr_addr);
       BlockMap::const_iterator end = m_L2_cache.end();
 
-      if (pos != end) {
+      if (pos != end && pos->second) {
         size_t curr_read_size = cache_line_byte_size - cache_offset;
         if (curr_read_size > bytes_left)
           curr_read_size = bytes_left;

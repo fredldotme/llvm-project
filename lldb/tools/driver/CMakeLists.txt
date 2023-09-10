@@ -27,6 +27,18 @@ add_dependencies(lldb
   LLDBOptionsTableGen
   ${tablegen_deps}
 )
+add_lldb_library(lldb_tool
+  Driver.cpp
+  Platform.cpp
+
+  LINK_LIBS
+    liblldb
+
+  LINK_COMPONENTS
+    Option
+    Support
+)
+target_compile_definitions(lldb_tool PUBLIC LLDB_NO_SYSTEM)
 
 set_target_properties(LLDBOptionsTableGen PROPERTIES FOLDER "lldb misc")
 

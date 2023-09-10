@@ -16,7 +16,6 @@ set(LIBUNWIND_C_SOURCES
     UnwindLevel1.c
     UnwindLevel1-gcc-ext.c
     Unwind-sjlj.c
-    Unwind-wasm.c
     )
 set_source_files_properties(${LIBUNWIND_C_SOURCES}
                             PROPERTIES
@@ -60,17 +59,10 @@ if (MSVC_IDE)
   source_group("Header Files" FILES ${LIBUNWIND_HEADERS})
 endif()
 
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL wasm32 OR
-   CMAKE_SYSTEM_PROCESSOR STREQUAL wasm64)
-  set(LIBUNWIND_SOURCES
-      Unwind-wasm.c
-      )
-else()
-  set(LIBUNWIND_SOURCES
-      ${LIBUNWIND_CXX_SOURCES}
-      ${LIBUNWIND_C_SOURCES}
-      ${LIBUNWIND_ASM_SOURCES})
-endif()
+set(LIBUNWIND_SOURCES
+    ${LIBUNWIND_CXX_SOURCES}
+    ${LIBUNWIND_C_SOURCES}
+    ${LIBUNWIND_ASM_SOURCES})
 
 # Generate library list.
 add_library_flags_if(LIBUNWIND_HAS_C_LIB c)

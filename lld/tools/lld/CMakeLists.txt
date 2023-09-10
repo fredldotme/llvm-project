@@ -39,3 +39,19 @@ endif()
 foreach(link ${LLD_SYMLINKS_TO_CREATE})
   add_lld_symlink(${link} lld)
 endforeach()
+
+add_lld_library(lld_tool
+  lld.cpp
+  )
+lld_target_link_libraries(lld_tool
+    PRIVATE
+  lldCommon
+  lldCOFF
+  lldELF
+  lldMachO
+  lldMinGW
+  lldWasm
+  )
+
+export_executable_symbols_for_plugins(lld_tool)
+target_compile_definitions(lld_tool PUBLIC LLD_NO_SYSTEM)

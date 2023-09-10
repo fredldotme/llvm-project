@@ -643,6 +643,11 @@ raw_fd_ostream::raw_fd_ostream(int fd, bool shouldClose, bool unbuffered,
   if (FD <= STDERR_FILENO)
     ShouldClose = false;
 
+#if TARGET_OS_IPHONE
+  if (FD == fileno(nosystem_stdout) || FD == fileno(nosystem_stderr))
+    ShouldClose = false;
+#endif
+
 #ifdef _WIN32
   // Check if this is a console device. This is not equivalent to isatty.
   IsWindowsConsole =
@@ -769,18 +774,18 @@ void raw_fd_ostream::write_impl(const char *Ptr, size_t Size) {
   // When using redirection, ios_system has issues with large writes
   // Using trial and error to find a reasonable size: SIZE_MAX >> 1 is too much.
   // 1024 is enough. TODO: try larger values
-  MaxWriteSize = 1024;
+  MaxWriteSize = 4096;
 #endif
 
   do {
     size_t ChunkSize = std::min(Size, MaxWriteSize);
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
        ssize_t ret; 
-       if (FD == STDOUT_FILENO) {
-               ret = ::write(fileno(nosystem_stdout), Ptr, ChunkSize); 
+       if (FD == STDOUT_FILENO || FD == fileno(nosystem_stdout)) {
+               ret = ::write(fileno(nosystem_stdout), Ptr, ChunkSize);
        }
-       else if  (FD == STDERR_FILENO) {
-               ret = ::write(fileno(nosystem_stderr), Ptr, ChunkSize); 
+       else if  (FD == STDERR_FILENO || FD == fileno(nosystem_stderr)) {
+               ret = ::write(fileno(nosystem_stderr), Ptr, ChunkSize);
        }
        else ret = ::write(FD, Ptr, ChunkSize);
 #else
@@ -817,6 +822,12 @@ void raw_fd_ostream::write_impl(const char *Ptr, size_t Size) {
 }
 
 void raw_fd_ostream::close() {
+#if TARGET_OS_IPHONE
+  if (fileno(nosystem_stdout) == FD || fileno(nosystem_stderr) == FD) {
+    return;
+  }
+#endif
+
   assert(ShouldClose);
   ShouldClose = false;
   flush();

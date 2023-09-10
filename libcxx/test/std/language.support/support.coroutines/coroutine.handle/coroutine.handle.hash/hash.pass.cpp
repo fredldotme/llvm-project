@@ -30,17 +30,17 @@
 
 template <class C>
 void do_test(int *LHSVal, int *RHSVal) {
-  const size_t ExpectLHS = std::hash<void*>{}((LHSVal));
-  const size_t ExpectRHS = std::hash<void*>{}((RHSVal));
-  const C LHS = C::from_address((LHSVal));
-  const C RHS = C::from_address((RHSVal));
+  [[maybe_unused]] const std::size_t ExpectLHS = std::hash<void*>{}(LHSVal);
+  [[maybe_unused]] const std::size_t ExpectRHS = std::hash<void*>{}(RHSVal);
+  const C LHS = C::from_address(LHSVal);
+  const C RHS = C::from_address(RHSVal);
   const std::hash<C> h;
 
   LIBCPP_ASSERT(h(LHS) == ExpectLHS);
   LIBCPP_ASSERT(h(RHS) == ExpectRHS);
   assert((h(LHS) == h(RHS)) == (LHSVal == RHSVal));
   {
-    ASSERT_SAME_TYPE(decltype(h(LHS)), size_t);
+    ASSERT_SAME_TYPE(decltype(h(LHS)), std::size_t);
     ASSERT_NOEXCEPT(std::hash<C>{}(LHS));
   }
 }

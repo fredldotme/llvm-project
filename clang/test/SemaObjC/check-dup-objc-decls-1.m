@@ -1,4 +1,5 @@
 // RUN: %clang_cc1 -fsyntax-only -verify -Wno-objc-root-class %s
+// RUN: %clang_cc1 -fsyntax-only -verify -Wno-objc-root-class -Wno-objc-duplicate-category-definition -DIGNORE_DUP_CAT %s
 
 @interface Foo // expected-note {{previous definition is here}}
 @end
@@ -22,7 +23,7 @@ typedef int Gorf;  // expected-note {{previous definition is here}}
 
 @interface Gorf @end // expected-error {{redefinition of 'Gorf' as different kind of symbol}} expected-note {{previous definition is here}}
 
-void Gorf() // expected-error {{redefinition of 'Gorf' as different kind of symbol}}
+void Gorf(void) // expected-error {{redefinition of 'Gorf' as different kind of symbol}}
 {
   int Bar, Foo, FooBar;
 }
@@ -41,8 +42,13 @@ void Gorf() // expected-error {{redefinition of 'Gorf' as different kind of symb
 @protocol DP<Q> @end
 #pragma clang diagnostic pop
 
-@interface A(Cat)<P> @end // expected-note {{previous definition is here}}
-@interface A(Cat)<Q> @end // expected-warning {{duplicate definition of category 'Cat' on interface 'A'}}
+@interface A(Cat)<P> @end
+@interface A(Cat)<Q> @end
+
+#ifndef IGNORE_DUP_CAT
+// expected-note@-4 {{previous definition is here}}
+// expected-warning@-4 {{duplicate definition of category 'Cat' on interface 'A'}}
+#endif
 
 // rdar 7626768
 @class NSString;

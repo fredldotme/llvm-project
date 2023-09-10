@@ -7,10 +7,13 @@
 \*===----------------------------------------------------------------------===*/
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__Fuchsia__) || \
-    (defined(__sun__) && defined(__svr4__)) || defined(__NetBSD__)
+    (defined(__sun__) && defined(__svr4__)) || defined(__NetBSD__) || \
+    defined(_AIX)
 
+#if !defined(_AIX)
 #include <elf.h>
 #include <link.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,8 +46,8 @@ extern __llvm_profile_data PROF_DATA_START COMPILER_RT_VISIBILITY
     COMPILER_RT_WEAK;
 extern __llvm_profile_data PROF_DATA_STOP COMPILER_RT_VISIBILITY
     COMPILER_RT_WEAK;
-extern uint64_t PROF_CNTS_START COMPILER_RT_VISIBILITY COMPILER_RT_WEAK;
-extern uint64_t PROF_CNTS_STOP COMPILER_RT_VISIBILITY COMPILER_RT_WEAK;
+extern char PROF_CNTS_START COMPILER_RT_VISIBILITY COMPILER_RT_WEAK;
+extern char PROF_CNTS_STOP COMPILER_RT_VISIBILITY COMPILER_RT_WEAK;
 extern uint32_t PROF_ORDERFILE_START COMPILER_RT_VISIBILITY COMPILER_RT_WEAK;
 extern char PROF_NAME_START COMPILER_RT_VISIBILITY COMPILER_RT_WEAK;
 extern char PROF_NAME_STOP COMPILER_RT_VISIBILITY COMPILER_RT_WEAK;
@@ -65,10 +68,10 @@ COMPILER_RT_VISIBILITY const char *__llvm_profile_begin_names(void) {
 COMPILER_RT_VISIBILITY const char *__llvm_profile_end_names(void) {
   return &PROF_NAME_STOP;
 }
-COMPILER_RT_VISIBILITY uint64_t *__llvm_profile_begin_counters(void) {
+COMPILER_RT_VISIBILITY char *__llvm_profile_begin_counters(void) {
   return &PROF_CNTS_START;
 }
-COMPILER_RT_VISIBILITY uint64_t *__llvm_profile_end_counters(void) {
+COMPILER_RT_VISIBILITY char *__llvm_profile_end_counters(void) {
   return &PROF_CNTS_STOP;
 }
 COMPILER_RT_VISIBILITY uint32_t *__llvm_profile_begin_orderfile(void) {
@@ -88,26 +91,6 @@ COMPILER_RT_VISIBILITY ValueProfNode *EndVNode = &PROF_VNODES_STOP;
 #ifdef NT_GNU_BUILD_ID
 static size_t RoundUp(size_t size, size_t align) {
   return (size + align - 1) & ~(align - 1);
-}
-
-/*
- * Write binary id length and then its data, because binary id does not
- * have a fixed length.
- */
-static int WriteOneBinaryId(ProfDataWriter *Writer, uint64_t BinaryIdLen,
-                            const uint8_t *BinaryIdData,
-                            uint64_t BinaryIdPadding) {
-  ProfDataIOVec BinaryIdIOVec[] = {
-      {&BinaryIdLen, sizeof(uint64_t), 1, 0},
-      {BinaryIdData, sizeof(uint8_t), BinaryIdLen, 0},
-      {NULL, sizeof(uint8_t), BinaryIdPadding, 1},
-  };
-  if (Writer->Write(Writer, BinaryIdIOVec,
-                    sizeof(BinaryIdIOVec) / sizeof(*BinaryIdIOVec)))
-    return -1;
-
-  /* Successfully wrote binary id, report success. */
-  return 0;
 }
 
 /*
@@ -132,8 +115,9 @@ static int WriteBinaryIdForNote(ProfDataWriter *Writer,
     const uint8_t *BinaryIdData =
         (const uint8_t *)(NoteName + RoundUp(Note->n_namesz, 4));
     uint8_t BinaryIdPadding = __llvm_profile_get_num_padding_bytes(BinaryIdLen);
-    if (Writer != NULL && WriteOneBinaryId(Writer, BinaryIdLen, BinaryIdData,
-                                           BinaryIdPadding) == -1)
+    if (Writer != NULL &&
+        lprofWriteOneBinaryId(Writer, BinaryIdLen, BinaryIdData,
+                              BinaryIdPadding) == -1)
       return -1;
 
     BinaryIdSize = sizeof(BinaryIdLen) + BinaryIdLen + BinaryIdPadding;
@@ -217,7 +201,7 @@ COMPILER_RT_VISIBILITY int __llvm_write_binary_ids(ProfDataWriter *Writer) {
 
   return TotalBinaryIdsSize;
 }
-#else /* !NT_GNU_BUILD_ID */
+#elif !defined(_AIX) /* !NT_GNU_BUILD_ID */
 /*
  * Fallback implementation for targets that don't support the GNU
  * extensions NT_GNU_BUILD_ID and __ehdr_start.

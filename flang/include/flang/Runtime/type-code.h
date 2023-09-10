@@ -21,10 +21,10 @@ using common::TypeCategory;
 class TypeCode {
 public:
   TypeCode() {}
-  explicit TypeCode(ISO::CFI_type_t t) : raw_{t} {}
-  TypeCode(TypeCategory, int kind);
+  explicit RT_API_ATTRS TypeCode(ISO::CFI_type_t t) : raw_{t} {}
+  RT_API_ATTRS TypeCode(TypeCategory, int kind);
 
-  int raw() const { return raw_; }
+  RT_API_ATTRS int raw() const { return raw_; }
 
   constexpr bool IsValid() const {
     return raw_ >= CFI_type_signed_char && raw_ <= CFI_TYPE_LAST;
@@ -33,11 +33,11 @@ public:
     return raw_ >= CFI_type_signed_char && raw_ <= CFI_type_ptrdiff_t;
   }
   constexpr bool IsReal() const {
-    return raw_ >= CFI_type_float && raw_ <= CFI_type_long_double;
+    return raw_ >= CFI_type_half_float && raw_ <= CFI_type_float128;
   }
   constexpr bool IsComplex() const {
-    return raw_ >= CFI_type_float_Complex &&
-        raw_ <= CFI_type_long_double_Complex;
+    return raw_ >= CFI_type_half_float_Complex &&
+        raw_ <= CFI_type_float128_Complex;
   }
   constexpr bool IsCharacter() const {
     return raw_ == CFI_type_char || raw_ == CFI_type_char16_t ||
@@ -50,9 +50,12 @@ public:
   constexpr bool IsDerived() const { return raw_ == CFI_type_struct; }
   constexpr bool IsIntrinsic() const { return IsValid() && !IsDerived(); }
 
-  std::optional<std::pair<TypeCategory, int>> GetCategoryAndKind() const;
+  RT_API_ATTRS std::optional<std::pair<TypeCategory, int>>
+  GetCategoryAndKind() const;
 
-  bool operator==(const TypeCode &that) const { return raw_ == that.raw_; }
+  RT_API_ATTRS bool operator==(const TypeCode &that) const {
+    return raw_ == that.raw_;
+  }
   bool operator!=(const TypeCode &that) const { return raw_ != that.raw_; }
 
 private:

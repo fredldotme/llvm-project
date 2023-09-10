@@ -169,8 +169,9 @@ TokenSequence Definition::Apply(
           replacement_.TokenAt(prev - 1)[0] ==
               '#') { // stringify argument without macro replacement
         std::size_t resultSize{result.SizeInTokens()};
-        while (resultSize > 0 && result.TokenAt(resultSize - 1).empty()) {
+        while (resultSize > 0 && result.TokenAt(resultSize - 1).IsBlank()) {
           result.pop_back();
+          --resultSize;
         }
         CHECK(resultSize > 0 &&
             result.TokenAt(resultSize - 1) == replacement_.TokenAt(prev - 1));
@@ -272,7 +273,7 @@ std::optional<TokenSequence> Preprocessor::MacroReplacement(
   }
   TokenSequence result{input, 0, j};
   for (; j < tokens; ++j) {
-    const CharBlock &token{input.TokenAt(j)};
+    CharBlock token{input.TokenAt(j)};
     if (token.IsBlank() || !IsLegalIdentifierStart(token[0])) {
       result.Put(input, j);
       continue;
@@ -282,14 +283,15 @@ std::optional<TokenSequence> Preprocessor::MacroReplacement(
       result.Put(input, j);
       continue;
     }
-    Definition &def{it->second};
-    if (def.isDisabled()) {
+    Definition *def{&it->second};
+    if (def->isDisabled()) {
       result.Put(input, j);
       continue;
     }
-    if (!def.isFunctionLike()) {
-      if (def.isPredefined()) {
-        std::string name{def.replacement().TokenAt(0).ToString()};
+    if (!def->isFunctionLike()) {
+      bool isRenaming{false};
+      if (def->isPredefined()) {
+        std::string name{def->replacement().TokenAt(0).ToString()};
         std::string repl;
         if (name == "__FILE__") {
           repl = "\""s +
@@ -308,18 +310,38 @@ std::optional<TokenSequence> Preprocessor::MacroReplacement(
           continue;
         }
       }
-      def.set_isDisabled(true);
+      def->set_isDisabled(true);
       TokenSequence replaced{
-          TokenPasting(ReplaceMacros(def.replacement(), prescanner))};
-      def.set_isDisabled(false);
-      if (!replaced.empty()) {
-        ProvenanceRange from{def.replacement().GetProvenanceRange()};
-        ProvenanceRange use{input.GetTokenProvenanceRange(j)};
-        ProvenanceRange newRange{
-            allSources_.AddMacroCall(from, use, replaced.ToString())};
-        result.Put(replaced, newRange);
+          TokenPasting(ReplaceMacros(def->replacement(), prescanner))};
+      def->set_isDisabled(false);
+      // Allow a keyword-like macro replacement to be the name of
+      // a function-like macro, possibly surrounded by blanks.
+      std::size_t k{0}, repTokens{replaced.SizeInTokens()};
+      for (; k < repTokens && replaced.TokenAt(k).IsBlank(); ++k) {
       }
-      continue;
+      if (k < repTokens) {
+        token = replaced.TokenAt(k);
+        for (++k; k < repTokens && replaced.TokenAt(k).IsBlank(); ++k) {
+        }
+        if (k == repTokens && IsLegalIdentifierStart(token[0])) {
+          auto it{definitions_.find(token)};
+          if (it != definitions_.end() && !it->second.isDisabled() &&
+              it->second.isFunctionLike()) {
+            def = &it->second;
+            isRenaming = true;
+          }
+        }
+      }
+      if (!isRenaming) {
+        if (!replaced.empty()) {
+          ProvenanceRange from{def->replacement().GetProvenanceRange()};
+          ProvenanceRange use{input.GetTokenProvenanceRange(j)};
+          ProvenanceRange newRange{
+              allSources_.AddMacroCall(from, use, replaced.ToString())};
+          result.Put(replaced, newRange);
+        }
+        continue;
+      }
     }
     // Possible function-like macro call.  Skip spaces and newlines to see
     // whether '(' is next.
@@ -353,13 +375,13 @@ std::optional<TokenSequence> Preprocessor::MacroReplacement(
         }
       }
     }
-    if (argStart.size() == 1 && k == argStart[0] && def.argumentCount() == 0) {
+    if (argStart.size() == 1 && k == argStart[0] && def->argumentCount() == 0) {
       // Subtle: () is zero arguments, not one empty argument,
       // unless one argument was expected.
       argStart.clear();
     }
-    if (k >= tokens || argStart.size() < def.argumentCount() ||
-        (argStart.size() > def.argumentCount() && !def.isVariadic())) {
+    if (k >= tokens || argStart.size() < def->argumentCount() ||
+        (argStart.size() > def->argumentCount() && !def->isVariadic())) {
       result.Put(input, j);
       continue;
     }
@@ -370,12 +392,12 @@ std::optional<TokenSequence> Preprocessor::MacroReplacement(
           (n + 1 == argStart.size() ? k : argStart[n + 1] - 1) - at};
       args.emplace_back(TokenSequence(input, at, count));
     }
-    def.set_isDisabled(true);
+    def->set_isDisabled(true);
     TokenSequence replaced{
-        ReplaceMacros(def.Apply(args, prescanner), prescanner)};
-    def.set_isDisabled(false);
+        ReplaceMacros(def->Apply(args, prescanner), prescanner)};
+    def->set_isDisabled(false);
     if (!replaced.empty()) {
-      ProvenanceRange from{def.replacement().GetProvenanceRange()};
+      ProvenanceRange from{def->replacement().GetProvenanceRange()};
       ProvenanceRange use{input.GetIntervalProvenanceRange(j, k - j)};
       ProvenanceRange newRange{
           allSources_.AddMacroCall(from, use, replaced.ToString())};
@@ -412,7 +434,8 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
     return;
   }
   if (IsDecimalDigit(dir.TokenAt(j)[0]) || dir.TokenAt(j)[0] == '"') {
-    return; // treat like #line, ignore it
+    LineDirective(dir, j, prescanner);
+    return;
   }
   std::size_t dirOffset{j};
   std::string dirName{ToLowerCaseLetters(dir.TokenAt(dirOffset).ToString())};
@@ -422,7 +445,7 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
     nameToken = dir.TokenAt(j);
   }
   if (dirName == "line") {
-    // #line is ignored
+    LineDirective(dir, j, prescanner);
   } else if (dirName == "define") {
     if (nameToken.empty()) {
       prescanner.Say(dir.GetTokenProvenanceRange(j < tokens ? j : tokens - 1),
@@ -494,7 +517,7 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
     } else {
       if (dir.IsAnythingLeft(++j)) {
         prescanner.Say(dir.GetIntervalProvenanceRange(j, tokens - j),
-            "#undef: excess tokens at end of directive"_en_US);
+            "#undef: excess tokens at end of directive"_port_en_US);
       } else {
         definitions_.erase(nameToken);
       }
@@ -508,7 +531,7 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
     } else {
       if (dir.IsAnythingLeft(++j)) {
         prescanner.Say(dir.GetIntervalProvenanceRange(j, tokens - j),
-            "#%s: excess tokens at end of directive"_en_US, dirName);
+            "#%s: excess tokens at end of directive"_port_en_US, dirName);
       }
       doThen = IsNameDefined(nameToken) == (dirName == "ifdef");
     }
@@ -528,7 +551,7 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
   } else if (dirName == "else") {
     if (dir.IsAnythingLeft(j)) {
       prescanner.Say(dir.GetIntervalProvenanceRange(j, tokens - j),
-          "#else: excess tokens at end of directive"_en_US);
+          "#else: excess tokens at end of directive"_port_en_US);
     } else if (ifStack_.empty()) {
       prescanner.Say(dir.GetTokenProvenanceRange(dirOffset),
           "#else: not nested within #if, #ifdef, or #ifndef"_err_en_US);
@@ -555,7 +578,7 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
   } else if (dirName == "endif") {
     if (dir.IsAnythingLeft(j)) {
       prescanner.Say(dir.GetIntervalProvenanceRange(j, tokens - j),
-          "#endif: excess tokens at end of directive"_en_US);
+          "#endif: excess tokens at end of directive"_port_en_US);
     } else if (ifStack_.empty()) {
       prescanner.Say(dir.GetTokenProvenanceRange(dirOffset),
           "#endif: no #if, #ifdef, or #ifndef"_err_en_US);
@@ -566,8 +589,11 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
     prescanner.Say(
         dir.GetIntervalProvenanceRange(dirOffset, tokens - dirOffset),
         "%s"_err_en_US, dir.ToString());
-  } else if (dirName == "warning" || dirName == "comment" ||
-      dirName == "note") {
+  } else if (dirName == "warning") {
+    prescanner.Say(
+        dir.GetIntervalProvenanceRange(dirOffset, tokens - dirOffset),
+        "%s"_warn_en_US, dir.ToString());
+  } else if (dirName == "comment" || dirName == "note") {
     prescanner.Say(
         dir.GetIntervalProvenanceRange(dirOffset, tokens - dirOffset),
         "%s"_en_US, dir.ToString());
@@ -592,16 +618,17 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
       }
       if (k >= tokens) {
         prescanner.Say(dir.GetIntervalProvenanceRange(j, tokens - j),
-            "#include: expected '>' at end of included file"_en_US);
+            "#include: expected '>' at end of included file"_port_en_US);
       }
       TokenSequence braced{dir, j + 1, k - j - 1};
-      include = ReplaceMacros(braced, prescanner).ToString();
+      include = braced.ToString();
       j = k;
-    } else if ((include = dir.TokenAt(j).ToString()).substr(0, 1) == "\"" &&
-        include.substr(include.size() - 1, 1) == "\"") { // #include "foo"
+    } else if (((include = dir.TokenAt(j).ToString()).substr(0, 1) == "\"" ||
+                   include.substr(0, 1) == "'") &&
+        include.substr(include.size() - 1, 1) == include.substr(0, 1)) {
+      // #include "foo" and #include 'foo'
       include = include.substr(1, include.size() - 2);
-      // #include "foo" starts search in directory of file containing
-      // the directive
+      // Start search in directory of file containing the directive
       auto prov{dir.GetTokenProvenanceRange(dirOffset).start()};
       if (const auto *currentFile{allSources_.GetSourceFile(prov)}) {
         prependPath = DirectoryName(currentFile->path());
@@ -619,7 +646,7 @@ void Preprocessor::Directive(const TokenSequence &dir, Prescanner &prescanner) {
     j = dir.SkipBlanks(j + 1);
     if (j < tokens && dir.TokenAt(j).ToString() != "!") {
       prescanner.Say(dir.GetIntervalProvenanceRange(j, tokens - j),
-          "#include: extra stuff ignored after file name"_en_US);
+          "#include: extra stuff ignored after file name"_port_en_US);
     }
     std::string buf;
     llvm::raw_string_ostream error{buf};
@@ -1095,5 +1122,58 @@ bool Preprocessor::IsIfPredicateTrue(const TokenSequence &expr,
                      : "excess characters after expression"_err_en_US);
   }
   return result;
+}
+
+void Preprocessor::LineDirective(
+    const TokenSequence &dir, std::size_t j, Prescanner &prescanner) {
+  std::size_t tokens{dir.SizeInTokens()};
+  const std::string *linePath{nullptr};
+  std::optional<int> lineNumber;
+  SourceFile *sourceFile{nullptr};
+  std::optional<SourcePosition> pos;
+  for (; j < tokens; j = dir.SkipBlanks(j + 1)) {
+    std::string tstr{dir.TokenAt(j).ToString()};
+    Provenance provenance{dir.GetTokenProvenance(j)};
+    if (!pos) {
+      pos = allSources_.GetSourcePosition(provenance);
+    }
+    if (!sourceFile && pos) {
+      sourceFile = const_cast<SourceFile *>(&*pos->sourceFile);
+    }
+    if (tstr.front() == '"' && tstr.back() == '"') {
+      tstr = tstr.substr(1, tstr.size() - 2);
+      if (!tstr.empty() && sourceFile) {
+        linePath = &sourceFile->SavePath(std::move(tstr));
+      }
+    } else if (IsDecimalDigit(tstr[0])) {
+      if (!lineNumber) { // ignore later column number
+        int ln{0};
+        for (char c : tstr) {
+          if (IsDecimalDigit(c)) {
+            int nln{10 * ln + c - '0'};
+            if (nln / 10 == ln && nln % 10 == c - '0') {
+              ln = nln;
+              continue;
+            }
+          }
+          prescanner.Say(provenance,
+              "bad line number '%s' in #line directive"_err_en_US, tstr);
+          return;
+        }
+        lineNumber = ln;
+      }
+    } else {
+      prescanner.Say(
+          provenance, "bad token '%s' in #line directive"_err_en_US, tstr);
+      return;
+    }
+  }
+  if (lineNumber && sourceFile) {
+    CHECK(pos);
+    if (!linePath) {
+      linePath = &*pos->path;
+    }
+    sourceFile->LineDirective(pos->trueLineNumber + 1, *linePath, *lineNumber);
+  }
 }
 } // namespace Fortran::parser

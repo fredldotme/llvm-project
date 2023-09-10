@@ -8,9 +8,9 @@
 
 // <iostream>
 
-// istream wclog;
+// wostream wclog;
 
-// XFAIL: libcpp-has-no-wide-characters
+// XFAIL: no-wide-characters
 
 // UNSUPPORTED: executor-has-no-bash
 // FILE_DEPENDENCIES: ../check-stderr.sh

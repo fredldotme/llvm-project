@@ -17,7 +17,10 @@ def RocketModel : SchedMachineModel {
   let LoadLatency = 3;
   let MispredictPenalty = 3;
   let CompleteModel = false;
-  let UnsupportedFeatures = [HasStdExtV, HasStdExtZvlsseg];
+  let UnsupportedFeatures = [HasStdExtZbkb, HasStdExtZbkc, HasStdExtZbkx,
+                             HasStdExtZcmt, HasStdExtZknd, HasStdExtZkne,
+                             HasStdExtZknh, HasStdExtZksed, HasStdExtZksh,
+                             HasStdExtZkr, HasVInstructions, HasVInstructionsI64];
 }
 
 //===----------------------------------------------------------------------===//
@@ -48,7 +51,6 @@ let SchedModel = RocketModel in {
 def : WriteRes<WriteJmp, [RocketUnitB]>;
 def : WriteRes<WriteJal, [RocketUnitB]>;
 def : WriteRes<WriteJalr, [RocketUnitB]>;
-def : WriteRes<WriteJmpReg, [RocketUnitB]>;
 
 // Integer arithmetic and logic
 def : WriteRes<WriteIALU32, [RocketUnitALU]>;
@@ -90,7 +92,6 @@ def : WriteRes<WriteLDH, [RocketUnitMem]>;
 
 let Latency = 2 in {
 def : WriteRes<WriteLDW, [RocketUnitMem]>;
-def : WriteRes<WriteLDWU, [RocketUnitMem]>;
 def : WriteRes<WriteLDD, [RocketUnitMem]>;
 def : WriteRes<WriteFLD32, [RocketUnitMem]>;
 def : WriteRes<WriteFLD64, [RocketUnitMem]>;
@@ -108,14 +109,14 @@ def : WriteRes<WriteAtomicSTD, [RocketUnitMem]>;
 
 // Single precision.
 let Latency = 4 in {
-def : WriteRes<WriteFALU32, [RocketUnitFPALU]>;
+def : WriteRes<WriteFAdd32, [RocketUnitFPALU]>;
 def : WriteRes<WriteFSGNJ32, [RocketUnitFPALU]>;
 def : WriteRes<WriteFMinMax32, [RocketUnitFPALU]>;
 }
 
 // Double precision
 let Latency = 6 in {
-def : WriteRes<WriteFALU64, [RocketUnitFPALU]>;
+def : WriteRes<WriteFAdd64, [RocketUnitFPALU]>;
 def : WriteRes<WriteFSGNJ64, [RocketUnitFPALU]>;
 def : WriteRes<WriteFMinMax64, [RocketUnitFPALU]>;
 }
@@ -198,12 +199,13 @@ def : ReadAdvance<ReadAtomicLDW, 0>;
 def : ReadAdvance<ReadAtomicLDD, 0>;
 def : ReadAdvance<ReadAtomicSTW, 0>;
 def : ReadAdvance<ReadAtomicSTD, 0>;
+def : ReadAdvance<ReadFStoreData, 0>;
 def : ReadAdvance<ReadFMemBase, 0>;
-def : ReadAdvance<ReadFALU32, 0>;
-def : ReadAdvance<ReadFALU64, 0>;
+def : ReadAdvance<ReadFAdd32, 0>;
+def : ReadAdvance<ReadFAdd64, 0>;
 def : ReadAdvance<ReadFMul32, 0>;
-def : ReadAdvance<ReadFMA32, 0>;
 def : ReadAdvance<ReadFMul64, 0>;
+def : ReadAdvance<ReadFMA32, 0>;
 def : ReadAdvance<ReadFMA64, 0>;
 def : ReadAdvance<ReadFDiv32, 0>;
 def : ReadAdvance<ReadFDiv64, 0>;
@@ -237,5 +239,11 @@ def : ReadAdvance<ReadFClass64, 0>;
 defm : UnsupportedSchedV;
 defm : UnsupportedSchedZba;
 defm : UnsupportedSchedZbb;
+defm : UnsupportedSchedZbc;
+defm : UnsupportedSchedZbs;
+defm : UnsupportedSchedZbkb;
+defm : UnsupportedSchedZbkx;
+defm : UnsupportedSchedZfa;
 defm : UnsupportedSchedZfh;
+defm : UnsupportedSchedSFB;
 }

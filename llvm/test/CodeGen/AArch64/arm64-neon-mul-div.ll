@@ -1712,4 +1712,3 @@ define <2 x double> @fmulx_v2f64(<2 x double> %lhs, <2 x double> %rhs) {
         %val = call <2 x double> @llvm.aarch64.neon.fmulx.v2f64(<2 x double> %lhs, <2 x double> %rhs)
         ret <2 x double> %val
 }
-

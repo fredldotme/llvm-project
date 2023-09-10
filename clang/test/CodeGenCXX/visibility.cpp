@@ -1,8 +1,8 @@
 // RUN: %clang_cc1 %s -std=c++11 -triple=x86_64-apple-darwin10 -emit-llvm -o - | FileCheck %s
-// RUN: %clang_cc1 %s -std=c++11 -triple=x86_64-apple-darwin10 -fvisibility hidden -emit-llvm -o - | FileCheck %s -check-prefix=CHECK-HIDDEN
+// RUN: %clang_cc1 %s -std=c++11 -triple=x86_64-apple-darwin10 -fvisibility=hidden -emit-llvm -o - | FileCheck %s -check-prefix=CHECK-HIDDEN
 // For clang, "internal" is just an alias for "hidden". We could use it for some
 // optimization purposes on 32-bit x86, but it's not worth it.
-// RUN: %clang_cc1 %s -std=c++11 -triple=x86_64-apple-darwin10 -fvisibility internal -emit-llvm -o - | FileCheck %s -check-prefix=CHECK-HIDDEN
+// RUN: %clang_cc1 %s -std=c++11 -triple=x86_64-apple-darwin10 -fvisibility=internal -emit-llvm -o - | FileCheck %s -check-prefix=CHECK-HIDDEN
 
 #define HIDDEN __attribute__((visibility("hidden")))
 #define PROTECTED __attribute__((visibility("protected")))
@@ -101,6 +101,28 @@ namespace test48 {
   // CHECK-HIDDEN: _ZN6test481yE = hidden global
 }
 
+namespace test72 {
+  template <class T>
+  struct foo {
+    HIDDEN static int var1;
+    template <class U> HIDDEN static U var2;
+  };
+  template <class T> template <class U>
+  U foo<T>::var2;
+
+  extern template struct DEFAULT foo<int>;
+
+  int use() {
+    foo<int> o;
+    foo<long> p;
+    return o.var1 + o.var2<int> + p.var1 + p.var2<int>;
+  }
+  // CHECK:      @_ZN6test723fooIiE4var1E = external hidden global i32
+  // CHECK-NEXT: @_ZN6test723fooIiE4var2IiEE = linkonce_odr global i32 0
+  // CHECK-NEXT: @_ZN6test723fooIlE4var1E = external hidden global i32
+  // CHECK-NEXT: @_ZN6test723fooIlE4var2IiEE = linkonce_odr global i32 0
+}
+
 // CHECK: @_ZN5Test425VariableInHiddenNamespaceE = hidden global i32 10
 // CHECK: @_ZN5Test71aE = hidden global
 // CHECK: @_ZN5Test71bE = global
@@ -118,6 +140,8 @@ namespace test48 {
 // CHECK-HIDDEN: @_ZN6Test143varE = external global
 // CHECK: @_ZN6Test154TempINS_1AEE5Inner6bufferE = external global [0 x i8]
 // CHECK-HIDDEN: @_ZN6Test154TempINS_1AEE5Inner6bufferE = external global [0 x i8]
+// CHECK: @_ZTVN6test701BE = external hidden unnamed_addr constant { [5 x ptr] }, align 8
+// CHECK: @_ZTTN6test701BE = external hidden unnamed_addr constant [2 x ptr], align 8
 
 namespace test27 {
   template<typename T>
@@ -955,13 +979,23 @@ namespace test51 {
 
   struct HIDDEN foo {
   };
-  DEFAULT foo x;
+  DEFAULT foo x, y, z;
   template<foo *z>
   void DEFAULT zed() {
   }
   template void zed<&x>();
   // CHECK-LABEL: define weak_odr hidden void @_ZN6test513zedIXadL_ZNS_1xEEEEEvv
   // CHECK-HIDDEN-LABEL: define weak_odr hidden void @_ZN6test513zedIXadL_ZNS_1xEEEEEvv
+
+  template void HIDDEN zed<&y>();
+  // CHECK-LABEL: define weak_odr hidden void @_ZN6test513zedIXadL_ZNS_1yEEEEEvv(
+  // CHECK-HIDDEN-LABEL: define weak_odr hidden void @_ZN6test513zedIXadL_ZNS_1yEEEEEvv(
+
+  void use() {
+    zed<&z>();
+  }
+  // CHECK-LABEL: define linkonce_odr hidden void @_ZN6test513zedIXadL_ZNS_1zEEEEEvv(
+  // CHECK-HIDDEN-LABEL: define linkonce_odr hidden void @_ZN6test513zedIXadL_ZNS_1zEEEEEvv(
 }
 
 namespace test52 {
@@ -1316,4 +1350,47 @@ namespace test69 {
   }
   // CHECK-LABEL: define void @_ZN6test693foo1fEv
   // CHECK-HIDDEN-LABEL: define hidden void @_ZN6test693foo1fEv
+}
+
+namespace test70 {
+  // Make sure both the vtable and VTT declarations are marked "hidden"
+  class HIDDEN A {
+    virtual void a();
+  };
+  class HIDDEN B : virtual A {
+    void a() override;
+    ~B();
+  };
+  B::~B() {}
+  // Check lines at top of file.
+}
+
+// https://github.com/llvm/llvm-project/issues/31462
+namespace test71 {
+  template <class T>
+  struct foo {
+    static HIDDEN T zed();
+    template <class U> HIDDEN U bar();
+  };
+  template <class T>
+  T foo<T>::zed() { return {}; }
+  template <class T> template <class U>
+  U foo<T>::bar() { return {}; }
+
+  extern template struct DEFAULT foo<int>;
+
+  int use() {
+    foo<int> o;
+    foo<long> p;
+    return o.zed() + o.bar<int>() + p.zed() + p.bar<int>();
+  }
+  /// FIXME: foo<int>::bar is hidden in GCC w/ or w/o -fvisibility=hidden.
+  // CHECK-LABEL: declare hidden noundef i32 @_ZN6test713fooIiE3zedEv(
+  // CHECK-LABEL: define linkonce_odr noundef i32 @_ZN6test713fooIiE3barIiEET_v(
+  // CHECK-LABEL: define linkonce_odr hidden noundef i64 @_ZN6test713fooIlE3zedEv(
+  // CHECK-LABEL: define linkonce_odr noundef i32 @_ZN6test713fooIlE3barIiEET_v(
+  // CHECK-HIDDEN-LABEL: declare hidden noundef i32 @_ZN6test713fooIiE3zedEv(
+  // CHECK-HIDDEN-LABEL: define linkonce_odr noundef i32 @_ZN6test713fooIiE3barIiEET_v(
+  // CHECK-HIDDEN-LABEL: define linkonce_odr hidden noundef i64 @_ZN6test713fooIlE3zedEv(
+  // CHECK-HIDDEN-LABEL: define linkonce_odr hidden noundef i32 @_ZN6test713fooIlE3barIiEET_v(
 }

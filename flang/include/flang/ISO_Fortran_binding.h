@@ -18,6 +18,8 @@
  * implementation.
  */
 
+#include "Runtime/api-attrs.h"
+
 #ifdef __cplusplus
 namespace Fortran {
 namespace ISO {
@@ -55,32 +57,40 @@ typedef signed char CFI_type_t;
 #define CFI_type_int16_t 8
 #define CFI_type_int32_t 9
 #define CFI_type_int64_t 10
-#define CFI_type_int128_t 11 /* extension */
+#define CFI_type_int128_t 11 /* extension kind=16 */
 #define CFI_type_int_least8_t 12
 #define CFI_type_int_least16_t 13
 #define CFI_type_int_least32_t 14
 #define CFI_type_int_least64_t 15
-#define CFI_type_int_least128_t 16
+#define CFI_type_int_least128_t 16 /* extension */
 #define CFI_type_int_fast8_t 17
 #define CFI_type_int_fast16_t 18
 #define CFI_type_int_fast32_t 19
 #define CFI_type_int_fast64_t 20
-#define CFI_type_int_fast128_t 21
+#define CFI_type_int_fast128_t 21 /* extension */
 #define CFI_type_intmax_t 22
 #define CFI_type_intptr_t 23
 #define CFI_type_ptrdiff_t 24
-#define CFI_type_float 25
-#define CFI_type_double 26
-#define CFI_type_long_double 27
-#define CFI_type_float_Complex 28
-#define CFI_type_double_Complex 29
-#define CFI_type_long_double_Complex 30
-#define CFI_type_Bool 31
-#define CFI_type_char 32
-#define CFI_type_cptr 33
-#define CFI_type_struct 34
-#define CFI_type_char16_t 35 /* extension: char16_t */
-#define CFI_type_char32_t 36 /* extension: char32_t */
+#define CFI_type_half_float 25 /* extension: kind=2 */
+#define CFI_type_bfloat 26 /* extension: kind=3 */
+#define CFI_type_float 27
+#define CFI_type_double 28
+#define CFI_type_extended_double 29 /* extension: kind=10 */
+#define CFI_type_long_double 30
+#define CFI_type_float128 31 /* extension: kind=16 */
+#define CFI_type_half_float_Complex 32 /* extension: kind=2 */
+#define CFI_type_bfloat_Complex 33 /* extension: kind=3 */
+#define CFI_type_float_Complex 34
+#define CFI_type_double_Complex 35
+#define CFI_type_extended_double_Complex 36 /* extension: kind=10 */
+#define CFI_type_long_double_Complex 37
+#define CFI_type_float128_Complex 38 /* extension: kind=16 */
+#define CFI_type_Bool 39
+#define CFI_type_char 40
+#define CFI_type_cptr 41
+#define CFI_type_struct 42
+#define CFI_type_char16_t 43 /* extension kind=2 */
+#define CFI_type_char32_t 44 /* extension kind=4 */
 #define CFI_TYPE_LAST CFI_type_char32_t
 #define CFI_type_other (-1) // must be negative
 
@@ -113,8 +123,8 @@ namespace cfi_internal {
 // care of getting the memory storage. Note that it already contains one element
 // because a struct cannot be empty.
 template <typename T> struct FlexibleArray : T {
-  T &operator[](int index) { return *(this + index); }
-  const T &operator[](int index) const { return *(this + index); }
+  RT_API_ATTRS T &operator[](int index) { return *(this + index); }
+  const RT_API_ATTRS T &operator[](int index) const { return *(this + index); }
   operator T *() { return this; }
   operator const T *() const { return this; }
 };
@@ -166,11 +176,11 @@ extern "C" {
 void *CFI_address(const CFI_cdesc_t *, const CFI_index_t subscripts[]);
 int CFI_allocate(CFI_cdesc_t *, const CFI_index_t lower_bounds[],
     const CFI_index_t upper_bounds[], size_t elem_len);
-int CFI_deallocate(CFI_cdesc_t *);
+RT_API_ATTRS int CFI_deallocate(CFI_cdesc_t *);
 int CFI_establish(CFI_cdesc_t *, void *base_addr, CFI_attribute_t, CFI_type_t,
     size_t elem_len, CFI_rank_t, const CFI_index_t extents[]);
 int CFI_is_contiguous(const CFI_cdesc_t *);
-int CFI_section(CFI_cdesc_t *, const CFI_cdesc_t *source,
+RT_API_ATTRS int CFI_section(CFI_cdesc_t *, const CFI_cdesc_t *source,
     const CFI_index_t lower_bounds[], const CFI_index_t upper_bounds[],
     const CFI_index_t strides[]);
 int CFI_select_part(CFI_cdesc_t *, const CFI_cdesc_t *source,

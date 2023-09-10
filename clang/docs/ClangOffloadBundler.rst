@@ -174,7 +174,20 @@ Where:
       ============= ==============================================================
 
 **target-triple**
-    The target triple of the code object.
+    The target triple of the code object. See `Target Triple
+    <https://clang.llvm.org/docs/CrossCompilation.html#target-triple>`_.
+
+    The bundler accepts target triples with or without the optional environment
+    field:
+
+    ``<arch><sub>-<vendor>-<sys>``, or
+    ``<arch><sub>-<vendor>-<sys>-<env>``
+
+    However, in order to standardize outputs for tools that consume bitcode
+    bundles, bundles written by the bundler internally use only the 4-field
+    target triple:
+
+    ``<arch><sub>-<vendor>-<sys>-<env>``
 
 **target-id**
   The canonical target ID of the code object. Present only if the target
@@ -290,7 +303,7 @@ clang-offload-bundler extracts compatible device binaries for a given target
 from the bundled device binaries in a heterogeneous device archive and creates
 a target specific device archive without bundling.
 
-clang-offlocad-bundler determines whether a device binary is compatible with a
+clang-offload-bundler determines whether a device binary is compatible with a
 target by comparing bundle ID's. Two bundle ID's are considered compatible if:
 
   * Their offload kind are the same

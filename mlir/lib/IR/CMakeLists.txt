@@ -3,32 +3,39 @@ add_mlir_library(MLIRIR
   AffineMap.cpp
   AsmPrinter.cpp
   Attributes.cpp
+  AttrTypeSubElements.cpp
   Block.cpp
   Builders.cpp
   BuiltinAttributeInterfaces.cpp
   BuiltinAttributes.cpp
   BuiltinDialect.cpp
+  BuiltinDialectBytecode.cpp
   BuiltinTypes.cpp
+  BuiltinTypeInterfaces.cpp
   Diagnostics.cpp
   Dialect.cpp
+  DialectResourceBlobManager.cpp
   Dominance.cpp
+  ExtensibleDialect.cpp
   FunctionImplementation.cpp
-  FunctionSupport.cpp
+  FunctionInterfaces.cpp
   IntegerSet.cpp
   Location.cpp
   MLIRContext.cpp
+  ODSSupport.cpp
   Operation.cpp
   OperationSupport.cpp
   PatternMatch.cpp
   Region.cpp
   RegionKindInterface.cpp
-  SubElementInterfaces.cpp
   SymbolTable.cpp
   TensorEncoding.cpp
   Types.cpp
   TypeRange.cpp
   TypeUtilities.cpp
+  Unit.cpp
   Value.cpp
+  ValueRange.cpp
   Verifier.cpp
   Visitors.cpp
 
@@ -38,6 +45,7 @@ add_mlir_library(MLIRIR
   DEPENDS
   MLIRBuiltinAttributesIncGen
   MLIRBuiltinAttributeInterfacesIncGen
+  MLIRBuiltinDialectBytecodeIncGen
   MLIRBuiltinDialectIncGen
   MLIRBuiltinLocationAttributesIncGen
   MLIRBuiltinOpsIncGen
@@ -49,7 +57,6 @@ add_mlir_library(MLIRIR
   MLIROpAsmInterfaceIncGen
   MLIRRegionKindInterfaceIncGen
   MLIRSideEffectInterfacesIncGen
-  MLIRSubElementInterfacesIncGen
   MLIRSymbolInterfacesIncGen
   MLIRTensorEncodingIncGen
 

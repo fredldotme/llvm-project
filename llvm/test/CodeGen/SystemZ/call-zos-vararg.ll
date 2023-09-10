@@ -66,7 +66,7 @@ define i64 @call_vararg_both0(i64 %arg0, double %arg1) {
 ; CHECK:       larl  1, @CPI5_0
 ; CHECK-NEXT:  ld    0, 0(1)
 ; CHECK-NEXT:  ld    2, 8(1)
-; CHECK-NEXT:  lgdr  3, 0
+; CHECK:       lgdr  3, 0
 ; CHECK:       lghi  1, 1
 ; CHECK:       lghi  2, 2
 ; CHECK:       std   0, 2192(4)
@@ -189,7 +189,61 @@ entry:
   ret i64 %retval
 }
 
+; CHECK-LABEL: call_vararg_float0
+; CHECK:       lghi  1, 1
+; CHECK:       llihf 2, 1073692672
+define i64 @call_vararg_float0() {
+entry:
+  %retval = call i64 (i64, ...) @pass_vararg2(i64 1, float 1.953125)
+  ret i64 %retval
+}
+
+; CHECK-LABEL: call_vararg_float1
+; CHECK:       larl  1, @CPI17_0
+; CHECK:       le  0, 0(1)
+; CHECK:       llihf 0, 1073692672
+; CHECK:       llihh 2, 16384
+; CHECK:       llihh 3, 16392
+; CHECK:       stg  0, 2200(4)
+define i64 @call_vararg_float1() {
+entry:
+  %retval = call i64 (float, ...) @pass_vararg4(float 1.0, float 2.0, float 3.0, float 1.953125)
+  ret i64 %retval
+}
+
+; Derived from C source:
+; #define _VARARG_EXT_
+; #include <stdarg.h>
+;
+; long pass(long x, ...) {
+;   va_list va;
+;   va_start(va, x);
+;   long ret = va_arg(va, long);
+;   va_end(va);
+;   return ret;
+; }
+;
+; CHECK-LABEL: pass_vararg:
+; CHECK: aghi    4, -160
+; CHECK: la      0, 2208(4)
+; CHECK: stg     0, 2200(4)
+define hidden i64 @pass_vararg(i64 %x, ...) {
+entry:
+  %va = alloca ptr, align 8
+  call void @llvm.va_start(ptr %va)
+  %argp.cur = load ptr, ptr %va, align 8
+  %argp.next = getelementptr inbounds i8, ptr %argp.cur, i64 8
+  store ptr %argp.next, ptr %va, align 8
+  %ret = load i64, ptr %argp.cur, align 8
+  call void @llvm.va_end(ptr %va)
+  ret i64 %ret
+}
+
+declare void @llvm.va_start(ptr)
+declare void @llvm.va_end(ptr)
+
 declare i64 @pass_vararg0(i64 %arg0, i64 %arg1, ...)
 declare i64 @pass_vararg1(fp128 %arg0, ...)
 declare i64 @pass_vararg2(i64 %arg0, ...)
 declare i64 @pass_vararg3(...)
+declare i64 @pass_vararg4(float, ...)

@@ -14,6 +14,7 @@
 #include "lldb/Core/Section.h"
 #include "lldb/Target/Process.h"
 #include "lldb/Target/Target.h"
+#include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 
 using namespace lldb;
@@ -51,24 +52,31 @@ DynamicLoader *DynamicLoaderWasmDYLD::CreateInstance(Process *process,
 }
 
 void DynamicLoaderWasmDYLD::DidAttach() {
-  Log *log(GetLogIfAnyCategoriesSet(LIBLLDB_LOG_DYNAMIC_LOADER));
+  Log *log = GetLog(LLDBLog::DynamicLoader);
   LLDB_LOGF(log, "DynamicLoaderWasmDYLD::%s()", __FUNCTION__);
 
   // Ask the process for the list of loaded WebAssembly modules.
   auto error = m_process->LoadModules();
   LLDB_LOG_ERROR(log, std::move(error), "Couldn't load modules: {0}");
-
-  // TODO: multi-modules support ?
-  Target &target = m_process->GetTarget();
-  const ModuleList &modules = target.GetImages();
-  ModuleSP module_sp(modules.GetModuleAtIndex(0));
-  // module_sp is nullptr if without libxml2
-  if(module_sp) {
-    module_sp->PreloadSymbols();
-  }
 }
 
 ThreadPlanSP DynamicLoaderWasmDYLD::GetStepThroughTrampolinePlan(Thread &thread,
                                                                  bool stop) {
   return ThreadPlanSP();
+}
+
+lldb::ModuleSP DynamicLoaderWasmDYLD::LoadModuleAtAddress(
+    const lldb_private::FileSpec &file, lldb::addr_t link_map_addr,
+    lldb::addr_t base_addr, bool base_addr_is_offset) {
+  if (ModuleSP module_sp = DynamicLoader::LoadModuleAtAddress(
+          file, link_map_addr, base_addr, base_addr_is_offset))
+    return module_sp;
+
+  if (ModuleSP module_sp = m_process->ReadModuleFromMemory(file, base_addr)) {
+    UpdateLoadedSections(module_sp, link_map_addr, base_addr, false);
+    m_process->GetTarget().GetImages().AppendIfNeeded(module_sp);
+    return module_sp;
+  }
+
+  return nullptr;
 }

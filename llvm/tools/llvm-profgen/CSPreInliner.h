@@ -41,6 +41,13 @@ struct ProfiledInlineCandidate {
 struct ProfiledCandidateComparer {
   bool operator()(const ProfiledInlineCandidate &LHS,
                   const ProfiledInlineCandidate &RHS) {
+    // Always prioritize inlining zero-sized functions as they do not affect the
+    // size budget. This could happen when all of the callee's code is gone and
+    // only pseudo probes are left.
+    if ((LHS.SizeCost == 0 || RHS.SizeCost == 0) &&
+        (LHS.SizeCost != RHS.SizeCost))
+      return RHS.SizeCost == 0;
+
     if (LHS.CallsiteCount != RHS.CallsiteCount)
       return LHS.CallsiteCount < RHS.CallsiteCount;
 
@@ -67,8 +74,8 @@ using ProfiledCandidateQueue =
 // size by only keep context that is estimated to be inlined.
 class CSPreInliner {
 public:
-  CSPreInliner(SampleProfileMap &Profiles, ProfiledBinary &Binary,
-               uint64_t HotThreshold, uint64_t ColdThreshold);
+  CSPreInliner(SampleContextTracker &Tracker, ProfiledBinary &Binary,
+               ProfileSummary *Summary);
   void run();
 
 private:
@@ -77,16 +84,11 @@ private:
   std::vector<StringRef> buildTopDownOrder();
   void processFunction(StringRef Name);
   bool shouldInline(ProfiledInlineCandidate &Candidate);
-  uint32_t getFuncSize(const FunctionSamples &FSamples);
+  uint32_t getFuncSize(const ContextTrieNode *ContextNode);
   bool UseContextCost;
-  SampleContextTracker ContextTracker;
-  SampleProfileMap &ProfileMap;
+  SampleContextTracker &ContextTracker;
   ProfiledBinary &Binary;
-
-  // Count thresholds to answer isHotCount and isColdCount queries.
-  // Mirrors the threshold in ProfileSummaryInfo.
-  uint64_t HotCountThreshold;
-  uint64_t ColdCountThreshold;
+  ProfileSummary *Summary;
 };
 
 } // end namespace sampleprof

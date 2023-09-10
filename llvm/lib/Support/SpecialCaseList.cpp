@@ -15,7 +15,6 @@
 
 #include "llvm/Support/SpecialCaseList.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Regex.h"
 #include "llvm/Support/VirtualFileSystem.h"
@@ -38,7 +37,6 @@ bool SpecialCaseList::Matcher::insert(std::string Regexp,
     Strings[Regexp] = LineNumber;
     return true;
   }
-  Trigrams.insert(Regexp);
 
   // Replace * with .*
   for (size_t pos = 0; (pos = Regexp.find('*', pos)) != std::string::npos;
@@ -62,8 +60,6 @@ unsigned SpecialCaseList::Matcher::match(StringRef Query) const {
   auto It = Strings.find(Query);
   if (It != Strings.end())
     return It->second;
-  if (Trigrams.isDefinitelyOut(Query))
-    return false;
   for (const auto &RegExKV : RegExes)
     if (RegExKV.first->match(Query))
       return RegExKV.second;
@@ -176,7 +172,7 @@ bool SpecialCaseList::parse(const MemoryBuffer *MB,
     StringRef Category = SplitRegexp.second;
 
     // Create this section if it has not been seen before.
-    if (SectionsMap.find(Section) == SectionsMap.end()) {
+    if (!SectionsMap.contains(Section)) {
       std::unique_ptr<Matcher> M = std::make_unique<Matcher>();
       std::string REError;
       if (!M->insert(std::string(Section), LineNo, REError)) {
@@ -199,7 +195,7 @@ bool SpecialCaseList::parse(const MemoryBuffer *MB,
   return true;
 }
 
-SpecialCaseList::~SpecialCaseList() {}
+SpecialCaseList::~SpecialCaseList() = default;
 
 bool SpecialCaseList::inSection(StringRef Section, StringRef Prefix,
                                 StringRef Query, StringRef Category) const {

@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -fsyntax-only -fdouble-square-bracket-attributes -verify
+// RUN: %clang_cc1 %s -fsyntax-only -verify
 
 void __attribute__((annotate("foo"))) foo(float *a) {
   __attribute__((annotate("bar"))) int x;
@@ -12,4 +12,7 @@ void __attribute__((annotate("foo"))) foo(float *a) {
   int v = __builtin_annotation(z, (char*) L"bar"); // expected-error {{second argument to __builtin_annotation must be a non-wide string constant}}
   int w = __builtin_annotation(z, "foo");
   float b = __builtin_annotation(*a, "foo"); // expected-error {{first argument to __builtin_annotation must be an integer}}
+
+  __attribute__((annotate())) int c; // expected-error {{'annotate' attribute takes at least 1 argument}}
+  [[clang::annotate()]] int c2;      // expected-error {{'annotate' attribute takes at least 1 argument}}
 }

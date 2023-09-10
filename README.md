@@ -1,29 +1,18 @@
 # The LLVM Compiler Infrastructure
 
-This directory and its sub-directories contain a forked source code for LLVM,
-a toolkit for the construction of highly optimized compilers,
-optimizers, and run-time environments.
-
-The README briefly describes how to get started with building LLVM.
-For more information on how to contribute to the LLVM project, please
-take a look at the
-[Contributing to LLVM](https://llvm.org/docs/Contributing.html) guide.
-
-## Getting Started with the LLVM System
-
-Taken from https://llvm.org/docs/GettingStarted.html.
-
-### Overview
-
 Welcome to the LLVM project!
+
+This repository contains the source code for LLVM, a toolkit for the
+construction of highly optimized compilers, optimizers, and run-time
+environments.
 
 The LLVM project has multiple components. The core of the project is
 itself called "LLVM". This contains all of the tools, libraries, and header
 files needed to process intermediate representations and convert them into
-object files.  Tools include an assembler, disassembler, bitcode analyzer, and
-bitcode optimizer.  It also contains basic regression tests.
+object files. Tools include an assembler, disassembler, bitcode analyzer, and
+bitcode optimizer.
 
-C-like languages use the [Clang](http://clang.llvm.org/) front end.  This
+C-like languages use the [Clang](http://clang.llvm.org/) frontend. This
 component compiles C, C++, Objective-C, and Objective-C++ code into LLVM bitcode
 -- and from there into object files, using LLVM.
 
@@ -31,107 +20,20 @@ Other components include:
 the [libc++ C++ standard library](https://libcxx.llvm.org),
 the [LLD linker](https://lld.llvm.org), and more.
 
-### Getting the Source Code and Building LLVM
-
-The LLVM Getting Started documentation may be out of date.  The [Clang
-Getting Started](http://clang.llvm.org/get_started.html) page might have more
-accurate information.
-
-This is an example work-flow and configuration to get and build the LLVM source:
-
-1. Checkout LLVM (including related sub-projects like Clang):
-
-     * ``git clone https://github.com/llvm/llvm-project.git``
-
-     * Or, on windows, ``git clone --config core.autocrlf=false
-    https://github.com/llvm/llvm-project.git``
-
-2. Configure and build LLVM and Clang:
-
-     * ``cd llvm-project``
-
-     * ``cmake -S llvm -B build -G <generator> [options]``
-
-        Some common build system generators are:
-
-        * ``Ninja`` --- for generating [Ninja](https://ninja-build.org)
-          build files. Most llvm developers use Ninja.
-        * ``Unix Makefiles`` --- for generating make-compatible parallel makefiles.
-        * ``Visual Studio`` --- for generating Visual Studio projects and
-          solutions.
-        * ``Xcode`` --- for generating Xcode projects.
-
-        Some common options:
-
-        * ``-DLLVM_ENABLE_PROJECTS='...'`` --- semicolon-separated list of the LLVM
-          sub-projects you'd like to additionally build. Can include any of: clang,
-          clang-tools-extra, compiler-rt,cross-project-tests, flang, libc, libclc,
-          libcxx, libcxxabi, libunwind, lld, lldb, mlir, openmp, polly, or pstl.
-
-          For example, to build LLVM, Clang, libcxx, and libcxxabi, use
-          ``-DLLVM_ENABLE_PROJECTS="clang;libcxx;libcxxabi"``.
-
-        * ``-DCMAKE_INSTALL_PREFIX=directory`` --- Specify for *directory* the full
-          path name of where you want the LLVM tools and libraries to be installed
-          (default ``/usr/local``).
-
-        * ``-DCMAKE_BUILD_TYPE=type`` --- Valid options for *type* are Debug,
-          Release, RelWithDebInfo, and MinSizeRel. Default is Debug.
-
-        * ``-DLLVM_ENABLE_ASSERTIONS=On`` --- Compile with assertion checks enabled
-          (default is Yes for Debug builds, No for all other build types).
-
-      * ``cmake --build build [-- [options] <target>]`` or your build system specified above
-        directly.
-
-        * The default target (i.e. ``ninja`` or ``make``) will build all of LLVM.
-
-        * The ``check-all`` target (i.e. ``ninja check-all``) will run the
-          regression tests to ensure everything is in working order.
-
-        * CMake will generate targets for each tool and library, and most
-          LLVM sub-projects generate their own ``check-<project>`` target.
-
-        * Running a serial build will be **slow**.  To improve speed, try running a
-          parallel build.  That's done by default in Ninja; for ``make``, use the option
-          ``-j NNN``, where ``NNN`` is the number of parallel jobs, e.g. the number of
-          CPUs you have.
-
-      * For more information see [CMake](https://llvm.org/docs/CMake.html)
+## Getting the Source Code and Building LLVM
 
 Consult the
-[Getting Started with LLVM](https://llvm.org/docs/GettingStarted.html#getting-started-with-llvm)
-page for detailed information on configuring and compiling LLVM. You can visit
-[Directory Layout](https://llvm.org/docs/GettingStarted.html#directory-layout)
-to learn about the layout of the source code tree.
+[Getting Started with LLVM](https://llvm.org/docs/GettingStarted.html#getting-the-source-code-and-building-llvm)
+page for information on building and running LLVM.
 
-iOS version specific information
-================================
+For information on how to contribute to the LLVM project, please take a look at
+the [Contributing to LLVM](https://llvm.org/docs/Contributing.html) guide.
 
-This is a very experimental port. It's is designed to work inside ios_system
-(https://github.com/holzschu/ios_system), which itself is supposed to be 
-embedded inside shell applications such as OpenTerm, a-Shell or Blink:
-- https://github.com/louisdh/terminal
-- https://github.com/holzschu/a-Shell
+## Getting in touch
 
-Compilation of the entire package takes several hours (divided by the number of 
-cores you can give to the compiler). 
+Join the [LLVM Discourse forums](https://discourse.llvm.org/), [Discord
+chat](https://discord.gg/xS7Z362), or #llvm IRC channel on
+[OFTC](https://oftc.net/).
 
-The steps for compilation are:
-- compile LLVM, clang, lld, libcxx and libcxxabi for OSX
-- make sure ios_system has been compiled, and if not compile it.
-- compile LLVM and clang for iOS and the Simulator (that's the long step)
-
-"bootstrap.sh" in this directory takes care of all these steps. Remember, 
-you have time for a long walk in the woods while it compiles. 
-
-You can also embed the precompiled Swift binary packages from the release, using Xcode -> Swift Packages -> Add package dependency for Xcode 12 and above. 
-
-Once you have compiled everything, add the binaries you want (at least clang) 
-to the list of embedded binaries, along with libLLVM.dylib and libclang.dylib.
-
-Once you have the binaries inside your app, you need to provide the header files. I copied them from `wasi-sdk`: https://github.com/holzschu/wasi-sdk since the focus is on creating webAssembly files, but you can also copy from the Xcode iPhone SDK if you plan on compiling for iOS (you will not be able to execute files compiled for iOS without signing them, which requires moving them to a Mac, but still). 
-
-I welcome all help on this project, including on this README file. 
-
-
+The LLVM project has adopted a [code of conduct](https://llvm.org/docs/CodeOfConduct.html) for
+participants to all modes of communication within the project.

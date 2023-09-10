@@ -1,4 +1,4 @@
-//===- llvm/Support/Unix/Program.cpp -----------------------------*- C++ -*-===//
+//===- llvm/Support/Unix/Program.inc ----------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -11,8 +11,8 @@
 //===----------------------------------------------------------------------===//
 
 //===----------------------------------------------------------------------===//
-//=== WARNING: Implementation here must contain only generic UNIX code that
-//===          is guaranteed to work on *all* UNIX variants.
+//=== WARNING: Implementation here must contain only generic UNIX
+//===          code that is guaranteed to work on *all* UNIX variants.
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Support/Program.h"
@@ -64,7 +64,7 @@
 #endif
 
 #if !USE_NSGETENVIRON
-  extern char **environ;
+extern char **environ;
 #else
 #include <crt_externs.h> // _NSGetEnviron
 #endif
@@ -98,12 +98,12 @@ ErrorOr<std::string> sys::findProgramByName(StringRef Name,
     SmallString<128> FilePath(Path);
     sys::path::append(FilePath, Name);
     if (sys::fs::can_execute(FilePath.c_str()))
-      return std::string(FilePath.str());  // Found the executable!
+      return std::string(FilePath.str()); // Found the executable!
   }
   return errc::no_such_file_or_directory;
 }
 
-static bool RedirectIO(Optional<StringRef> Path, int FD, std::string* ErrMsg) {
+static bool RedirectIO(std::optional<StringRef> Path, int FD, std::string *ErrMsg) {
   if (!Path) // Noop
     return false;
   std::string File;
@@ -114,10 +114,10 @@ static bool RedirectIO(Optional<StringRef> Path, int FD, std::string* ErrMsg) {
     File = std::string(*Path);
 
   // Open the file
-  int InFD = open(File.c_str(), FD == 0 ? O_RDONLY : O_WRONLY|O_CREAT, 0666);
+  int InFD = open(File.c_str(), FD == 0 ? O_RDONLY : O_WRONLY | O_CREAT, 0666);
   if (InFD == -1) {
-    MakeErrMsg(ErrMsg, "Cannot open file '" + File + "' for "
-              + (FD == 0 ? "input" : "output"));
+    MakeErrMsg(ErrMsg, "Cannot open file '" + File + "' for " +
+                           (FD == 0 ? "input" : "output"));
     return true;
   }
 
@@ -127,7 +127,7 @@ static bool RedirectIO(Optional<StringRef> Path, int FD, std::string* ErrMsg) {
     close(InFD);
     return true;
   }
-  close(InFD);      // Close the original FD
+  close(InFD); // Close the original FD
   return false;
 }
 
@@ -144,30 +144,28 @@ static bool RedirectIO_PS(const std::string *Path, int FD, std::string *ErrMsg,
     File = Path->c_str();
 
   if (int Err = posix_spawn_file_actions_addopen(
-          FileActions, FD, File,
-          FD == 0 ? O_RDONLY : O_WRONLY | O_CREAT, 0666))
+          FileActions, FD, File, FD == 0 ? O_RDONLY : O_WRONLY | O_CREAT, 0666))
     return MakeErrMsg(ErrMsg, "Cannot posix_spawn_file_actions_addopen", Err);
   return false;
 }
 #endif
 
-static void TimeOutHandler(int Sig) {
-}
+static void TimeOutHandler(int Sig) {}
 
 static void SetMemoryLimits(unsigned size) {
 #if HAVE_SYS_RESOURCE_H && HAVE_GETRLIMIT && HAVE_SETRLIMIT
   struct rlimit r;
-  __typeof__ (r.rlim_cur) limit = (__typeof__ (r.rlim_cur)) (size) * 1048576;
+  __typeof__(r.rlim_cur) limit = (__typeof__(r.rlim_cur))(size)*1048576;
 
   // Heap size
-  getrlimit (RLIMIT_DATA, &r);
+  getrlimit(RLIMIT_DATA, &r);
   r.rlim_cur = limit;
-  setrlimit (RLIMIT_DATA, &r);
+  setrlimit(RLIMIT_DATA, &r);
 #ifdef RLIMIT_RSS
   // Resident set size.
-  getrlimit (RLIMIT_RSS, &r);
+  getrlimit(RLIMIT_RSS, &r);
   r.rlim_cur = limit;
-  setrlimit (RLIMIT_RSS, &r);
+  setrlimit(RLIMIT_RSS, &r);
 #endif
 #endif
 }
@@ -182,8 +180,8 @@ toNullTerminatedCStringArray(ArrayRef<StringRef> Strings, StringSaver &Saver) {
 }
 
 static bool Execute(ProcessInfo &PI, StringRef Program,
-                    ArrayRef<StringRef> Args, Optional<ArrayRef<StringRef>> Env,
-                    ArrayRef<Optional<StringRef>> Redirects,
+                    ArrayRef<StringRef> Args, std::optional<ArrayRef<StringRef>> Env,
+                    ArrayRef<std::optional<StringRef>> Redirects,
                     unsigned MemoryLimit, std::string *ErrMsg,
                     BitVector *AffinityMask) {
 #if (!TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR)
@@ -274,7 +272,7 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
       posix_spawn_file_actions_destroy(FileActions);
 
     if (Err)
-     return !MakeErrMsg(ErrMsg, "posix_spawn failed", Err);
+      return !MakeErrMsg(ErrMsg, "posix_spawn failed", Err);
 
     PI.Pid = PID;
     PI.Process = PID;
@@ -290,10 +288,10 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
   int child = 0;
 #endif
   switch (child) {
-    // An error occurred:  Return to the caller.
-    case -1:
-      MakeErrMsg(ErrMsg, "Couldn't fork");
-      return false;
+  // An error occurred:  Return to the caller.
+  case -1:
+    MakeErrMsg(ErrMsg, "Couldn't fork");
+    return false;
 
 #if (!TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR)
     // Child process: Execute the program.
@@ -363,7 +361,7 @@ namespace sys {
 #ifndef _AIX
 using ::wait4;
 #else
-static pid_t (wait4)(pid_t pid, int *status, int options, struct rusage *usage);
+static pid_t(wait4)(pid_t pid, int *status, int options, struct rusage *usage);
 #endif
 
 } // namespace sys
@@ -371,11 +369,11 @@ static pid_t (wait4)(pid_t pid, int *status, int options, struct rusage *usage);
 
 #ifdef _AIX
 #ifndef _ALL_SOURCE
-extern "C" pid_t (wait4)(pid_t pid, int *status, int options,
-                         struct rusage *usage);
+extern "C" pid_t(wait4)(pid_t pid, int *status, int options,
+                        struct rusage *usage);
 #endif
-pid_t (llvm::sys::wait4)(pid_t pid, int *status, int options,
-                         struct rusage *usage) {
+pid_t(llvm::sys::wait4)(pid_t pid, int *status, int options,
+                        struct rusage *usage) {
   assert(pid > 0 && "Only expecting to handle actual PID values!");
   assert((options & ~WNOHANG) == 0 && "Expecting WNOHANG at most!");
   assert(usage && "Expecting usage collection!");
@@ -403,25 +401,23 @@ pid_t (llvm::sys::wait4)(pid_t pid, int *status, int options,
 }
 #endif
 
-ProcessInfo llvm::sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
-                            bool WaitUntilTerminates, std::string *ErrMsg,
-                            Optional<ProcessStatistics> *ProcStat) {
-  int status;
-  ProcessInfo WaitResult;
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  // iOS: just wait for the process to terminate
-  // TODO: check whether the more sophisticated version below works
-  // with latest iOS_system.
-  WaitResult.Pid = waitpid(PI.Pid, &status, 0);
-#else
+ProcessInfo llvm::sys::Wait(const ProcessInfo &PI,
+                            std::optional<unsigned> SecondsToWait,
+                            std::string *ErrMsg,
+                            std::optional<ProcessStatistics> *ProcStat,
+                            bool Polling) {
   struct sigaction Act, Old;
   assert(PI.Pid && "invalid pid to wait on, process not started?");
 
   int WaitPidOptions = 0;
   pid_t ChildPid = PI.Pid;
-  if (WaitUntilTerminates) {
-    SecondsToWait = 0;
-  } else if (SecondsToWait) {
+  bool WaitUntilTerminates = false;
+  if (!SecondsToWait) {
+    WaitUntilTerminates = true;
+  } else {
+    if (*SecondsToWait == 0)
+      WaitPidOptions = WNOHANG;
+
     // Install a timeout handler.  The handler itself does nothing, but the
     // simple fact of having a handler at all causes the wait below to return
     // with EINTR, unlike if we used SIG_IGN.
@@ -430,11 +426,12 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
     sigemptyset(&Act.sa_mask);
     sigaction(SIGALRM, &Act, &Old);
     // FIXME The alarm signal may be delivered to another thread.
-    alarm(SecondsToWait);
-  } else if (SecondsToWait == 0)
-    WaitPidOptions = WNOHANG;
+    alarm(*SecondsToWait);
+  }
 
   // Parent process: Wait for the child process to terminate.
+  int status = 0;
+  ProcessInfo WaitResult;
   rusage Info;
   if (ProcStat)
     ProcStat->reset();
@@ -448,7 +445,7 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
       // Non-blocking wait.
       return WaitResult;
     } else {
-      if (SecondsToWait && errno == EINTR) {
+      if (SecondsToWait && errno == EINTR && !Polling) {
         // Kill the child.
         kill(PI.Pid, SIGKILL);
 
@@ -489,7 +486,6 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
 #endif
     *ProcStat = ProcessStatistics{UserT + KernelT, UserT, PeakMemory};
   }
-#endif // (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
 
   // Return the proper exit status. Detect error conditions
   // so we can return -1 for them and set ErrMsg informatively.
@@ -525,13 +521,13 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
   return WaitResult;
 }
 
-std::error_code llvm::sys::ChangeStdinMode(fs::OpenFlags Flags){
+std::error_code llvm::sys::ChangeStdinMode(fs::OpenFlags Flags) {
   if (!(Flags & fs::OF_Text))
     return ChangeStdinToBinary();
   return std::error_code();
 }
 
-std::error_code llvm::sys::ChangeStdoutMode(fs::OpenFlags Flags){
+std::error_code llvm::sys::ChangeStdoutMode(fs::OpenFlags Flags) {
   if (!(Flags & fs::OF_Text))
     return ChangeStdoutToBinary();
   return std::error_code();
@@ -551,7 +547,8 @@ std::error_code
 llvm::sys::writeFileWithEncoding(StringRef FileName, StringRef Contents,
                                  WindowsEncodingMethod Encoding /*unused*/) {
   std::error_code EC;
-  llvm::raw_fd_ostream OS(FileName, EC, llvm::sys::fs::OpenFlags::OF_TextWithCRLF);
+  llvm::raw_fd_ostream OS(FileName, EC,
+                          llvm::sys::fs::OpenFlags::OF_TextWithCRLF);
 
   if (EC)
     return EC;

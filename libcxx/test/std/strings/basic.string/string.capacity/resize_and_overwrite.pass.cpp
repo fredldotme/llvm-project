@@ -13,6 +13,7 @@
 // template<class Operation>
 // void resize_and_overwrite(size_type n, Operation op)
 
+#include <algorithm>
 #include <cassert>
 #include <string>
 
@@ -20,7 +21,7 @@
 #include "test_macros.h"
 
 template <class S>
-constexpr void test_appending(size_t k, size_t N, size_t new_capacity) {
+constexpr void test_appending(std::size_t k, size_t N, size_t new_capacity) {
   assert(N > k);
   assert(new_capacity >= N);
   auto s = S(k, 'a');
@@ -39,7 +40,7 @@ constexpr void test_appending(size_t k, size_t N, size_t new_capacity) {
 }
 
 template <class S>
-constexpr void test_truncating(size_t o, size_t N) {
+constexpr void test_truncating(std::size_t o, size_t N) {
   assert(N < o);
   auto s = S(o, 'a');
   s.resize_and_overwrite(N, [&](auto* p, auto n) {
@@ -75,9 +76,10 @@ constexpr bool test() {
 
 void test_value_categories() {
   std::string s;
-  s.resize_and_overwrite(10, [](char*&, size_t&) { return 0; });
+  s.resize_and_overwrite(10, [](char*&&, std::size_t&&) { return 0; });
+  s.resize_and_overwrite(10, [](char* const&, const std::size_t&) { return 0; });
   struct RefQualified {
-    int operator()(char*, size_t) && { return 0; }
+    int operator()(char*, std::size_t) && { return 0; }
   };
   s.resize_and_overwrite(10, RefQualified{});
 }
@@ -88,18 +90,14 @@ int main(int, char**) {
   test<char16_t>();
   test<char32_t>();
 
-#if defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
   static_assert(test<char>());
   static_assert(test<char8_t>());
   static_assert(test<char16_t>());
   static_assert(test<char32_t>());
-#endif
 
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
   test<wchar_t>();
-#if defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
   static_assert(test<wchar_t>());
-#endif
 #endif
   return 0;
 }

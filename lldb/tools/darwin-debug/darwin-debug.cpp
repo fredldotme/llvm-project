@@ -37,8 +37,6 @@
 
 #include <string>
 
-#include <TargetConditionals.h>
-
 #ifndef _POSIX_SPAWN_DISABLE_ASLR
 #define _POSIX_SPAWN_DISABLE_ASLR 0x0100
 #endif
@@ -306,10 +304,8 @@ int main(int argc, char *const *argv, char *const *envp, const char **apple) {
 
   // We are done with the socket
   close(s);
-#ifndef TARGET_OS_IPHONE
-  system("clear");
-#endif
 
+  system("clear");
   printf("Launching: '%s'\n", argv[0]);
   if (working_dir.empty()) {
     char cwd[PATH_MAX];

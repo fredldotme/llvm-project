@@ -7,8 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03
-
-// XFAIL: LIBCXX-AIX-FIXME
+// UNSUPPORTED: availability-filesystem-missing
 
 // <filesystem>
 

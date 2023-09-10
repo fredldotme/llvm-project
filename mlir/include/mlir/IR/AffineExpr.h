@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef MLIR_IR_AFFINE_EXPR_H
-#define MLIR_IR_AFFINE_EXPR_H
+#ifndef MLIR_IR_AFFINEEXPR_H
+#define MLIR_IR_AFFINEEXPR_H
 
 #include "mlir/Support/LLVM.h"
 #include "llvm/ADT/DenseMapInfo.h"
@@ -32,7 +32,6 @@ namespace detail {
 struct AffineExprStorage;
 struct AffineBinaryOpExprStorage;
 struct AffineDimExprStorage;
-struct AffineSymbolExprStorage;
 struct AffineConstantExprStorage;
 
 } // namespace detail
@@ -69,7 +68,7 @@ class AffineExpr {
 public:
   using ImplType = detail::AffineExprStorage;
 
-  constexpr AffineExpr() : expr(nullptr) {}
+  constexpr AffineExpr() {}
   /* implicit */ AffineExpr(const ImplType *expr)
       : expr(const_cast<ImplType *>(expr)) {}
 
@@ -82,7 +81,7 @@ public:
   bool operator!() const { return expr == nullptr; }
 
   template <typename U>
-  bool isa() const;
+  constexpr bool isa() const;
   template <typename U>
   U dyn_cast() const;
   template <typename U>
@@ -195,7 +194,7 @@ public:
   }
 
 protected:
-  ImplType *expr;
+  ImplType *expr{nullptr};
 };
 
 /// Affine binary operation expression. An affine binary operation could be an
@@ -267,14 +266,14 @@ AffineExpr getAffineExprFromFlatForm(ArrayRef<int64_t> flatExprs,
 raw_ostream &operator<<(raw_ostream &os, AffineExpr expr);
 
 template <typename U>
-bool AffineExpr::isa() const {
-  if (std::is_same<U, AffineBinaryOpExpr>::value)
+constexpr bool AffineExpr::isa() const {
+  if constexpr (std::is_same_v<U, AffineBinaryOpExpr>)
     return getKind() <= AffineExprKind::LAST_AFFINE_BINARY_OP;
-  if (std::is_same<U, AffineDimExpr>::value)
+  if constexpr (std::is_same_v<U, AffineDimExpr>)
     return getKind() == AffineExprKind::DimId;
-  if (std::is_same<U, AffineSymbolExpr>::value)
+  if constexpr (std::is_same_v<U, AffineSymbolExpr>)
     return getKind() == AffineExprKind::SymbolId;
-  if (std::is_same<U, AffineConstantExpr>::value)
+  if constexpr (std::is_same_v<U, AffineConstantExpr>)
     return getKind() == AffineExprKind::Constant;
 }
 template <typename U>
@@ -320,6 +319,7 @@ void bindSymbols(MLIRContext *ctx, AffineExprTy &e, AffineExprTy2 &...exprs) {
   e = getAffineSymbolExpr(N, ctx);
   bindSymbols<N + 1, AffineExprTy2 &...>(ctx, exprs...);
 }
+
 } // namespace detail
 
 /// Bind a list of AffineExpr references to DimExpr at positions:
@@ -329,11 +329,25 @@ void bindDims(MLIRContext *ctx, AffineExprTy &...exprs) {
   detail::bindDims<0>(ctx, exprs...);
 }
 
+template <typename AffineExprTy>
+void bindDimsList(MLIRContext *ctx, MutableArrayRef<AffineExprTy> exprs) {
+  int idx = 0;
+  for (AffineExprTy &e : exprs)
+    e = getAffineDimExpr(idx++, ctx);
+}
+
 /// Bind a list of AffineExpr references to SymbolExpr at positions:
 ///   [0 .. sizeof...(exprs)]
 template <typename... AffineExprTy>
 void bindSymbols(MLIRContext *ctx, AffineExprTy &...exprs) {
   detail::bindSymbols<0>(ctx, exprs...);
+}
+
+template <typename AffineExprTy>
+void bindSymbolsList(MLIRContext *ctx, MutableArrayRef<AffineExprTy> exprs) {
+  int idx = 0;
+  for (AffineExprTy &e : exprs)
+    e = getAffineSymbolExpr(idx++, ctx);
 }
 
 } // namespace mlir
@@ -344,11 +358,11 @@ namespace llvm {
 template <>
 struct DenseMapInfo<mlir::AffineExpr> {
   static mlir::AffineExpr getEmptyKey() {
-    auto pointer = llvm::DenseMapInfo<void *>::getEmptyKey();
+    auto *pointer = llvm::DenseMapInfo<void *>::getEmptyKey();
     return mlir::AffineExpr(static_cast<mlir::AffineExpr::ImplType *>(pointer));
   }
   static mlir::AffineExpr getTombstoneKey() {
-    auto pointer = llvm::DenseMapInfo<void *>::getTombstoneKey();
+    auto *pointer = llvm::DenseMapInfo<void *>::getTombstoneKey();
     return mlir::AffineExpr(static_cast<mlir::AffineExpr::ImplType *>(pointer));
   }
   static unsigned getHashValue(mlir::AffineExpr val) {
@@ -361,4 +375,4 @@ struct DenseMapInfo<mlir::AffineExpr> {
 
 } // namespace llvm
 
-#endif // MLIR_IR_AFFINE_EXPR_H
+#endif // MLIR_IR_AFFINEEXPR_H

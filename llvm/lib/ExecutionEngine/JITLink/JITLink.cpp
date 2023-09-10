@@ -8,7 +8,9 @@
 
 #include "llvm/ExecutionEngine/JITLink/JITLink.h"
 
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/BinaryFormat/Magic.h"
+#include "llvm/ExecutionEngine/JITLink/COFF.h"
 #include "llvm/ExecutionEngine/JITLink/ELF.h"
 #include "llvm/ExecutionEngine/JITLink/MachO.h"
 #include "llvm/Support/Format.h"
@@ -85,6 +87,21 @@ const char *getScopeName(Scope S) {
     return "local";
   }
   llvm_unreachable("Unrecognized llvm.jitlink.Scope enum");
+}
+
+bool isCStringBlock(Block &B) {
+  if (B.getSize() == 0) // Empty blocks are not valid C-strings.
+    return false;
+
+  // Zero-fill blocks of size one are valid empty strings.
+  if (B.isZeroFill())
+    return B.getSize() == 1;
+
+  for (size_t I = 0; I != B.getSize() - 1; ++I)
+    if (B.getContent()[I] == '\0')
+      return false;
+
+  return B.getContent()[B.getSize() - 1] == '\0';
 }
 
 raw_ostream &operator<<(raw_ostream &OS, const Block &B) {
@@ -194,7 +211,7 @@ Block &LinkGraph::splitBlock(Block &B, size_t SplitIndex,
     SplitBlockCache LocalBlockSymbolsCache;
     if (!Cache)
       Cache = &LocalBlockSymbolsCache;
-    if (*Cache == None) {
+    if (*Cache == std::nullopt) {
       *Cache = SplitBlockCache::value_type();
       for (auto *Sym : B.getSection().symbols())
         if (&Sym->getBlock() == &B)
@@ -308,14 +325,14 @@ void LinkGraph::dump(raw_ostream &OS) {
   }
 
   OS << "Absolute symbols:\n";
-  if (!llvm::empty(absolute_symbols())) {
+  if (!absolute_symbols().empty()) {
     for (auto *Sym : absolute_symbols())
       OS << "  " << Sym->getAddress() << ": " << *Sym << "\n";
   } else
     OS << "  none\n";
 
   OS << "\nExternal symbols:\n";
-  if (!llvm::empty(external_symbols())) {
+  if (!external_symbols().empty()) {
     for (auto *Sym : external_symbols())
       OS << "  " << Sym->getAddress() << ": " << *Sym << "\n";
   } else
@@ -334,7 +351,7 @@ raw_ostream &operator<<(raw_ostream &OS, const SymbolLookupFlags &LF) {
 
 void JITLinkAsyncLookupContinuation::anchor() {}
 
-JITLinkContext::~JITLinkContext() {}
+JITLinkContext::~JITLinkContext() = default;
 
 bool JITLinkContext::shouldAddDefaultTargetPasses(const Triple &TT) const {
   return true;
@@ -363,10 +380,13 @@ Error makeTargetOutOfRangeError(const LinkGraph &G, const Block &B,
     Section &Sec = B.getSection();
     ErrStream << "In graph " << G.getName() << ", section " << Sec.getName()
               << ": relocation target ";
-    if (E.getTarget().hasName())
-      ErrStream << "\"" << E.getTarget().getName() << "\" ";
-    ErrStream << "at address " << formatv("{0:x}", E.getTarget().getAddress());
-    ErrStream << " is out of range of " << G.getEdgeKindName(E.getKind())
+    if (E.getTarget().hasName()) {
+      ErrStream << "\"" << E.getTarget().getName() << "\"";
+    } else
+      ErrStream << E.getTarget().getBlock().getSection().getName() << " + "
+                << formatv("{0:x}", E.getOffset());
+    ErrStream << " at address " << formatv("{0:x}", E.getTarget().getAddress())
+              << " is out of range of " << G.getEdgeKindName(E.getKind())
               << " fixup at " << formatv("{0:x}", B.getFixupAddress(E)) << " (";
 
     Symbol *BestSymbolForBlock = nullptr;
@@ -388,6 +408,15 @@ Error makeTargetOutOfRangeError(const LinkGraph &G, const Block &B,
   return make_error<JITLinkError>(std::move(ErrMsg));
 }
 
+Error makeAlignmentError(llvm::orc::ExecutorAddr Loc, uint64_t Value, int N,
+                         const Edge &E) {
+  return make_error<JITLinkError>("0x" + llvm::utohexstr(Loc.getValue()) +
+                                  " improper alignment for relocation " +
+                                  formatv("{0:d}", E.getKind()) + ": 0x" +
+                                  llvm::utohexstr(Value) +
+                                  " is not aligned to " + Twine(N) + " bytes");
+}
+
 Expected<std::unique_ptr<LinkGraph>>
 createLinkGraphFromObject(MemoryBufferRef ObjectBuffer) {
   auto Magic = identify_magic(ObjectBuffer.getBuffer());
@@ -396,6 +425,8 @@ createLinkGraphFromObject(MemoryBufferRef ObjectBuffer) {
     return createLinkGraphFromMachOObject(ObjectBuffer);
   case file_magic::elf_relocatable:
     return createLinkGraphFromELFObject(ObjectBuffer);
+  case file_magic::coff_object:
+    return createLinkGraphFromCOFFObject(ObjectBuffer);
   default:
     return make_error<JITLinkError>("Unsupported file format");
   };
@@ -407,6 +438,8 @@ void link(std::unique_ptr<LinkGraph> G, std::unique_ptr<JITLinkContext> Ctx) {
     return link_MachO(std::move(G), std::move(Ctx));
   case Triple::ELF:
     return link_ELF(std::move(G), std::move(Ctx));
+  case Triple::COFF:
+    return link_COFF(std::move(G), std::move(Ctx));
   default:
     Ctx->notifyFailed(make_error<JITLinkError>("Unsupported object format"));
   };

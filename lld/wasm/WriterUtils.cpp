@@ -8,6 +8,7 @@
 
 #include "WriterUtils.h"
 #include "lld/Common/ErrorHandler.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/EndianStream.h"
 #include "llvm/Support/LEB128.h"
@@ -159,6 +160,11 @@ void writeMemArg(raw_ostream &os, uint32_t alignment, uint64_t offset) {
 }
 
 void writeInitExpr(raw_ostream &os, const WasmInitExpr &initExpr) {
+  assert(!initExpr.Extended);
+  writeInitExprMVP(os, initExpr.Inst);
+}
+
+void writeInitExprMVP(raw_ostream &os, const WasmInitExprMVP &initExpr) {
   writeU8(os, initExpr.Opcode, "opcode");
   switch (initExpr.Opcode) {
   case WASM_OPCODE_I32_CONST:

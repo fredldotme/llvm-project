@@ -98,6 +98,7 @@ cmake -G Ninja \
 -DLLVM_ENABLE_BACKTRACES=OFF \
 -DLLVM_ENABLE_EH=ON \
 -DLLVM_ENABLE_RTTI=ON \
+-DLLVM_ENABLE_ZSTD=OFF \
 -DLLDB_INCLUDE_TESTS=OFF \
 -DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF \
 -DLIBCXX_ENABLE_EXCEPTIONS=ON \
@@ -141,7 +142,7 @@ rm -f lib/libllc.a
 rm -f lib/libclang_tool.a
 rm -f lib/libopt.a
 ar -r lib/libclang_tool.a tools/clang/tools/driver/CMakeFiles/clang.dir/driver.cpp.o tools/clang/tools/driver/CMakeFiles/clang.dir/cc1_main.cpp.o tools/clang/tools/driver/CMakeFiles/clang.dir/cc1as_main.cpp.o tools/clang/tools/driver/CMakeFiles/clang.dir/cc1gen_reproducer_main.cpp.o  
-ar -r lib/libopt.a  tools/opt/CMakeFiles/opt.dir/AnalysisWrappers.cpp.o tools/opt/CMakeFiles/opt.dir/BreakpointPrinter.cpp.o tools/opt/CMakeFiles/opt.dir/GraphPrinters.cpp.o tools/opt/CMakeFiles/opt.dir/NewPMDriver.cpp.o tools/opt/CMakeFiles/opt.dir/PassPrinters.cpp.o tools/opt/CMakeFiles/opt.dir/PrintSCC.cpp.o tools/opt/CMakeFiles/opt.dir/opt.cpp.o
+# ar -r lib/libopt.a  tools/opt/CMakeFiles/opt.dir/AnalysisWrappers.cpp.o tools/opt/CMakeFiles/opt.dir/BreakpointPrinter.cpp.o tools/opt/CMakeFiles/opt.dir/GraphPrinters.cpp.o tools/opt/CMakeFiles/opt.dir/NewPMDriver.cpp.o tools/opt/CMakeFiles/opt.dir/PassPrinters.cpp.o tools/opt/CMakeFiles/opt.dir/PrintSCC.cpp.o tools/opt/CMakeFiles/opt.dir/opt.cpp.o
 # No need to make static libraries for these:
 # lli: tools/lli/CMakeFiles/lli.dir/lli.cpp.o 
 # llvm-link: tools/llvm-link/CMakeFiles/llvm-link.dir/llvm-link.cpp.o
@@ -194,6 +195,7 @@ cmake -G Ninja \
 -DLLVM_ENABLE_EH=ON \
 -DLLVM_ENABLE_RTTI=ON \
 -DLLDB_ENABLE_LZMA=FALSE \
+-DLLVM_ENABLE_ZSTD=OFF \
 -DLLDB_INCLUDE_TESTS=OFF \
 -DLLDB_EXPORT_ALL_SYMBOLS=TRUE \
 -DLLDB_USE_SYSTEM_DEBUGSERVER=TRUE \
@@ -237,7 +239,7 @@ rm -f lib/libllc.a
 rm -f lib/libclang_tool.a
 rm -f lib/libopt.a
 ar -r lib/libclang_tool.a tools/clang/tools/driver/CMakeFiles/clang.dir/driver.cpp.o tools/clang/tools/driver/CMakeFiles/clang.dir/cc1_main.cpp.o tools/clang/tools/driver/CMakeFiles/clang.dir/cc1as_main.cpp.o tools/clang/tools/driver/CMakeFiles/clang.dir/cc1gen_reproducer_main.cpp.o  
-ar -r lib/libopt.a  tools/opt/CMakeFiles/opt.dir/AnalysisWrappers.cpp.o tools/opt/CMakeFiles/opt.dir/BreakpointPrinter.cpp.o tools/opt/CMakeFiles/opt.dir/GraphPrinters.cpp.o tools/opt/CMakeFiles/opt.dir/NewPMDriver.cpp.o tools/opt/CMakeFiles/opt.dir/PassPrinters.cpp.o tools/opt/CMakeFiles/opt.dir/PrintSCC.cpp.o tools/opt/CMakeFiles/opt.dir/opt.cpp.o
+# ar -r lib/libopt.a  tools/opt/CMakeFiles/opt.dir/AnalysisWrappers.cpp.o tools/opt/CMakeFiles/opt.dir/BreakpointPrinter.cpp.o tools/opt/CMakeFiles/opt.dir/GraphPrinters.cpp.o tools/opt/CMakeFiles/opt.dir/NewPMDriver.cpp.o tools/opt/CMakeFiles/opt.dir/PassPrinters.cpp.o tools/opt/CMakeFiles/opt.dir/PrintSCC.cpp.o tools/opt/CMakeFiles/opt.dir/opt.cpp.o
 # No need to make static libraries for these:
 # lli: tools/lli/CMakeFiles/lli.dir/lli.cpp.o 
 # llvm-link: tools/llvm-link/CMakeFiles/llvm-link.dir/llvm-link.cpp.o

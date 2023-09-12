@@ -231,7 +231,9 @@ void llvm::llvm_unreachable_internal(const char *msg, const char *file,
   if (file)
     dbgs() << " at " << file << ":" << line;
   dbgs() << "!\n";
+#if !TARGET_OS_IPHONE
   abort();
+#endif
 #ifdef LLVM_BUILTIN_UNREACHABLE
   // Windows systems and possibly others don't declare abort() to be noreturn,
   // so use the unreachable builtin to avoid a Clang self-host warning.

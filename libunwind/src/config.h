@@ -46,6 +46,8 @@
 #elif defined(_AIX)
 // The traceback table at the end of each function is used for unwinding.
 #define _LIBUNWIND_SUPPORT_TBTAB_UNWIND 1
+#elif defined(__wasi__)
+#define _LIBUNWIND_SUPPORT_COMPACT_UNWIND 1
 #else
   // Assume an ELF system with a dl_iterate_phdr function.
   #define _LIBUNWIND_USE_DL_ITERATE_PHDR 1
@@ -98,7 +100,7 @@
                                              SYMBOL_NAME(name)))               \
   extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname;
 #endif
-#elif defined(__EMSCRIPTEN__)
+#elif defined(__wasi__)
 #else
 #error Unsupported target
 #endif

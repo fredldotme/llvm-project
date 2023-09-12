@@ -1,7 +1,7 @@
 # Get sources
 
 set(LIBUNWIND_CXX_SOURCES
-    libunwind.cpp
+    # libunwind.cpp
     Unwind-EHABI.cpp
     Unwind-seh.cpp
     )
@@ -13,18 +13,19 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "AIX")
 endif()
 
 set(LIBUNWIND_C_SOURCES
-    UnwindLevel1.c
+    # UnwindLevel1.c
     UnwindLevel1-gcc-ext.c
     Unwind-sjlj.c
+    Unwind-wasm.c
     )
 set_source_files_properties(${LIBUNWIND_C_SOURCES}
                             PROPERTIES
                               COMPILE_FLAGS "-std=c99")
 
-set(LIBUNWIND_ASM_SOURCES
-    UnwindRegistersRestore.S
-    UnwindRegistersSave.S
-    )
+#set(LIBUNWIND_ASM_SOURCES
+#    UnwindRegistersRestore.S
+#    UnwindRegistersSave.S
+#    )
 
 set(LIBUNWIND_HEADERS
     AddressSpace.hpp

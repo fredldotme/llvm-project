@@ -53,6 +53,8 @@
   #endif
   #define _LIBUNWIND_SUPPORT_DWARF_UNWIND 1
   #define _LIBUNWIND_SUPPORT_DWARF_INDEX 1
+#elif defined(__wasm__)
+#define _LIBUNWIND_SUPPORT_COMPACT_UNWIND 1
 #else
   // Assume an ELF system with a dl_iterate_phdr function.
   #define _LIBUNWIND_USE_DL_ITERATE_PHDR 1

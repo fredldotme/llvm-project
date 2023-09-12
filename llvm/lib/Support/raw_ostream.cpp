@@ -649,7 +649,8 @@ raw_fd_ostream::raw_fd_ostream(int fd, bool shouldClose, bool unbuffered,
     ShouldClose = false;
 
 #if TARGET_OS_IPHONE
-  if (FD == fileno(nosystem_stdout) || FD == fileno(nosystem_stderr))
+  if ((nosystem_stdout && FD == fileno(nosystem_stdout)) ||
+      (nosystem_stderr && FD == fileno(nosystem_stderr)))
     ShouldClose = false;
 #endif
 

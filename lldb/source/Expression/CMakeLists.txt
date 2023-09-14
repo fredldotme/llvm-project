@@ -15,6 +15,7 @@ add_lldb_library(lldbExpression NO_PLUGIN_DEPENDENCIES
   REPL.cpp
   UserExpression.cpp
   UtilityFunction.cpp
+  ProcessWasm.cpp
 
   DEPENDS
   intrinsics_gen

@@ -338,6 +338,8 @@ void ObjectFileWasm::CreateSections(SectionList &unified_section_list) {
                     0,              // Alignment of the section
                     0,              // Flags for this section.
                     1));            // Number of host bytes per target byte
+    if (section_type == eSectionTypeCode)
+      section_sp->SetPermissions(ePermissionsReadable|ePermissionsExecutable);
     m_sections_up->AddSection(section_sp);
     unified_section_list.AddSection(section_sp);
   }
@@ -364,6 +366,7 @@ bool ObjectFileWasm::SetLoadAddress(Target &target, lldb::addr_t load_address,
   assert(m_memory_addr == LLDB_INVALID_ADDRESS ||
          m_memory_addr == load_address);
 
+  lldb::addr_t adjust_addr;
   ModuleSP module_sp = GetModule();
   if (!module_sp)
     return false;
@@ -378,8 +381,9 @@ bool ObjectFileWasm::SetLoadAddress(Target &target, lldb::addr_t load_address,
   const size_t num_sections = section_list->GetSize();
   for (size_t sect_idx = 0; sect_idx < num_sections; ++sect_idx) {
     SectionSP section_sp(section_list->GetSectionAtIndex(sect_idx));
+    adjust_addr = load_address;
     if (target.SetSectionLoadAddress(
-            section_sp, load_address | section_sp->GetFileOffset())) {
+            section_sp, adjust_addr | section_sp->GetFileOffset())) {
       ++num_loaded_sections;
     }
   }

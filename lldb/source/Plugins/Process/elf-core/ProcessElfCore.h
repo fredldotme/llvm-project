@@ -79,8 +79,8 @@ public:
   bool WarnBeforeDetach() const override { return false; }
 
   // Process Memory
-  size_t ReadMemory(lldb::addr_t addr, void *buf, size_t size,
-                    lldb_private::Status &error) override;
+  size_t ReadMemory(lldb::addr_t vm_addr, void *buf, size_t size,
+                            lldb_private::Status &error, lldb_private::ExecutionContext *exe_ctx = nullptr) override;
 
   size_t DoReadMemory(lldb::addr_t addr, void *buf, size_t size,
                       lldb_private::Status &error) override;

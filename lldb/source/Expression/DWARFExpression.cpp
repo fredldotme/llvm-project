@@ -41,6 +41,7 @@
 #include "llvm/DebugInfo/DWARF/DWARFExpression.h"
 
 #include "Plugins/SymbolFile/DWARF/DWARFUnit.h"
+#include "Expression/ProcessWasm.h"
 
 using namespace lldb;
 using namespace lldb_private;
@@ -2593,6 +2594,62 @@ bool DWARFExpression::Evaluate(
       }
       break;
     }
+    case DW_OP_WASM_location: {
+    if (frame) {
+      const llvm::Triple::ArchType machine =
+          frame->CalculateTarget()->GetArchitecture().GetMachine();
+      if (machine != llvm::Triple::wasm32) {
+        if (error_ptr)
+          error_ptr->SetErrorString("Invalid target architecture for "
+                                    "DW_OP_WASM_location opcode.");
+        return false;
+      }
+
+      wasm::ProcessWasm *wasm_process =
+          static_cast<wasm::ProcessWasm *>(frame->CalculateProcess().get());
+      int frame_index = frame->GetConcreteFrameIndex();
+      uint64_t wasm_op = opcodes.GetULEB128(&offset);
+      uint64_t index = opcodes.GetULEB128(&offset);
+      uint8_t buf[16];
+      size_t size = 0;
+      switch (wasm_op) {
+      case 0: // Local
+        if (!wasm_process->GetWasmLocal(frame_index, index, buf, 16, size)) {
+          return false;
+        }
+        break;
+      case 1: // Global
+        if (!wasm_process->GetWasmGlobal(frame_index, index, buf, 16, size)) {
+          return false;
+        }
+        break;
+      case 2: // Operand Stack
+        if (!wasm_process->GetWasmStackValue(frame_index, index, buf, 16,
+                                             size)) {
+          return false;
+        }
+        break;
+      default:
+        return false;
+      }
+
+      if (size == sizeof(uint32_t)) {
+        uint32_t value;
+        memcpy(&value, buf, size);
+        stack.push_back(Scalar(value));
+      } else if (size == sizeof(uint64_t)) {
+        uint64_t value;
+        memcpy(&value, buf, size);
+        stack.push_back(Scalar(value));
+      } else
+        return false;
+    } else {
+      if (error_ptr)
+        error_ptr->SetErrorString("Invalid stack frame in context for "
+                                  "DW_OP_WASM_location opcode.");
+      return false;
+    }
+  } break;
 
     default:
       if (dwarf_cu) {

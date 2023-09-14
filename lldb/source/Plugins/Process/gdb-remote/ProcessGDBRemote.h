@@ -247,6 +247,8 @@ protected:
 
   bool SupportsMemoryTagging() override;
 
+  virtual std::shared_ptr<ThreadGDBRemote> CreateThread(lldb::tid_t tid);
+
   /// Broadcaster event bits definitions.
   enum {
     eBroadcastBitAsyncContinue = (1 << 0),

@@ -1938,7 +1938,7 @@ Status Process::DisableSoftwareBreakpoint(BreakpointSite *bp_site) {
 // code
 //#define VERIFY_MEMORY_READS
 
-size_t Process::ReadMemory(addr_t addr, void *buf, size_t size, Status &error) {
+size_t Process::ReadMemory(addr_t addr, void *buf, size_t size, Status &error, ExecutionContext *exe_ctx) {
   if (ABISP abi_sp = GetABI())
     addr = abi_sp->FixAnyAddress(addr);
 

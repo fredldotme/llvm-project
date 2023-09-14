@@ -79,6 +79,23 @@
 #include <string>
 #include <system_error>
 
+#if __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_OS_IPHONE
+extern "C" {
+extern __thread FILE* nosystem_stdin;
+extern __thread FILE* nosystem_stdout;
+extern __thread FILE* nosystem_stderr;
+#undef stdin
+#undef stdout
+#undef stderr
+#define stdin nosystem_stdin
+#define stdout nosystem_stdout
+#define stderr nosystem_stderr
+}
+#endif
+#endif
+
 // Includes for pipe()
 #if defined(_WIN32)
 #include <fcntl.h>

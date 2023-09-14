@@ -302,7 +302,7 @@ bool ProcessElfCore::IsAlive() { return true; }
 
 // Process Memory
 size_t ProcessElfCore::ReadMemory(lldb::addr_t addr, void *buf, size_t size,
-                                  Status &error) {
+                                  Status &error, lldb_private::ExecutionContext *exe_ctx) {
   if (lldb::ABISP abi_sp = GetABI())
     addr = abi_sp->FixAnyAddress(addr);
 

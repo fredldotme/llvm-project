@@ -15,6 +15,7 @@
 #include "lldb/Target/Process.h"
 #include "lldb/Target/Target.h"
 #include "lldb/Utility/FileSpec.h"
+#include "lldb/Utility/LLDBLog.h"
 #include "lldb/Utility/Log.h"
 #include "lldb/Utility/ProcessInfo.h"
 #include "lldb/Utility/Status.h"
@@ -54,7 +55,7 @@ void PlatformRemoteWASMServer::Terminate() {
 
 PlatformSP PlatformRemoteWASMServer::CreateInstance(bool force,
                                                     const ArchSpec *arch) {
-  Log *log(GetLogIfAllCategoriesSet(LIBLLDB_LOG_PLATFORM));
+  Log *log(GetLog(LLDBLog::State | LLDBLog::Process));
   if (log) {
     const char *arch_name;
     if (arch && arch->GetArchitectureName())
@@ -121,7 +122,7 @@ size_t PlatformRemoteWASMServer::ConnectToWaitingProcesses(Debugger &debugger,
 
 bool PlatformRemoteWASMServer::GetSupportedArchitectureAtIndex(uint32_t idx,
                                                               ArchSpec &arch) {
-  ArchSpec remote_arch = m_gdb_client.GetSystemArchitecture();
+  ArchSpec remote_arch = m_gdb_client_up->GetSystemArchitecture();
   if (idx == 0) {
     arch = remote_arch;
     return arch.IsValid();

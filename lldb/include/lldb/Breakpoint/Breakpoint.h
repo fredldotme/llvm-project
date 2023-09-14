@@ -9,6 +9,7 @@
 #ifndef LLDB_BREAKPOINT_BREAKPOINT_H
 #define LLDB_BREAKPOINT_BREAKPOINT_H
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <unordered_set>

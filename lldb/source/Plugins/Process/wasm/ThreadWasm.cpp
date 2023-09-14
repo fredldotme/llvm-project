@@ -8,7 +8,7 @@
 
 #include "ThreadWasm.h"
 
-#include "ProcessWasm.h"
+#include "Expression/ProcessWasm.h"
 #include "UnwindWasm.h"
 #include "lldb/Target/Target.h"
 

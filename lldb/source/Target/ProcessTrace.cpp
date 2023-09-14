@@ -80,7 +80,7 @@ void ProcessTrace::RefreshStateAfterStop() {}
 Status ProcessTrace::DoDestroy() { return Status(); }
 
 size_t ProcessTrace::ReadMemory(addr_t addr, void *buf, size_t size,
-                                Status &error) {
+                                Status &error, ExecutionContext *exe_ctx) {
   if (const ABISP &abi = GetABI())
     addr = abi->FixAnyAddress(addr);
 

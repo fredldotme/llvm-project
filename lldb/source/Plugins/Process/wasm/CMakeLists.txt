@@ -1,6 +1,5 @@
 
 add_lldb_library(lldbPluginProcessWasm PLUGIN
-  ProcessWasm.cpp
   ThreadWasm.cpp
   UnwindWasm.cpp
 

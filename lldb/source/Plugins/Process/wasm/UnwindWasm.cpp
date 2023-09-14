@@ -8,7 +8,7 @@
 
 #include "UnwindWasm.h"
 #include "Plugins/Process/gdb-remote/ThreadGDBRemote.h"
-#include "Plugins/Process/wasm/ProcessWasm.h"
+#include "Expression/ProcessWasm.h"
 #include "Plugins/Process/wasm/ThreadWasm.h"
 
 using namespace lldb;

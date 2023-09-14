@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "ProcessWasm.h"
-#include "ThreadWasm.h"
+#include "Plugins/Process/wasm/ThreadWasm.h"
 #include "lldb/Core/Module.h"
 #include "lldb/Core/PluginManager.h"
 #include "lldb/Utility/DataBufferHeap.h"
@@ -165,7 +165,7 @@ bool ProcessWasm::GetWasmLocal(int frame_index, int index, void *buf,
     return false;
   }
 
-  DataBufferSP buffer_sp(
+  WritableDataBufferSP buffer_sp(
       new DataBufferHeap(response.GetStringRef().size() / 2, 0));
   response.GetHexBytes(buffer_sp->GetData(), '\xcc');
   size = buffer_sp->GetByteSize();
@@ -192,7 +192,7 @@ bool ProcessWasm::GetWasmGlobal(int frame_index, int index, void *buf,
     return false;
   }
 
-  DataBufferSP buffer_sp(
+  WritableDataBufferSP buffer_sp(
       new DataBufferHeap(response.GetStringRef().size() / 2, 0));
   response.GetHexBytes(buffer_sp->GetData(), '\xcc');
   size = buffer_sp->GetByteSize();
@@ -219,7 +219,7 @@ bool ProcessWasm::GetWasmStackValue(int frame_index, int index, void *buf,
     return false;
   }
 
-  DataBufferSP buffer_sp(
+  WritableDataBufferSP buffer_sp(
       new DataBufferHeap(response.GetStringRef().size() / 2, 0));
   response.GetHexBytes(buffer_sp->GetData(), '\xcc');
   size = buffer_sp->GetByteSize();

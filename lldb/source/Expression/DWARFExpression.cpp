@@ -2051,8 +2051,12 @@ bool DWARFExpression::Evaluate(
           Scalar value;
           if (frame->GetFrameBaseValue(value, error_ptr)) {
             int64_t fbreg_offset = opcodes.GetSLEB128(&offset);
-            value += fbreg_offset;
-            stack.push_back(value);
+            if (!target || target->GetArchitecture().GetCore() != ArchSpec::eCore_wasm32) {
+              value += fbreg_offset;
+              stack.push_back(value);
+            } else {
+              stack.push_back(Scalar(value.ULong() + fbreg_offset));
+            }
             stack.back().SetValueType(Value::ValueType::LoadAddress);
           } else
             return false;

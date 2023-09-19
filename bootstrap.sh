@@ -89,7 +89,7 @@ pushd $IOS_BUILDDIR
 cmake -G Ninja \
 -DLLVM_LINK_LLVM_DYLIB=ON \
 -DLLVM_TARGET_ARCH=AArch64 \
--DLLVM_TARGETS_TO_BUILD="WebAssembly" \
+-DLLVM_TARGETS_TO_BUILD="AArch64;WebAssembly" \
 -DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;lldb' \
 -DLLVM_DEFAULT_TARGET_TRIPLE=arm64-apple-darwin \
 -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -185,7 +185,7 @@ pushd $SIM_BUILDDIR
 cmake -G Ninja \
 -DLLVM_LINK_LLVM_DYLIB=ON \
 -DLLVM_TARGET_ARCH=X86 \
--DLLVM_TARGETS_TO_BUILD="WebAssembly" \
+-DLLVM_TARGETS_TO_BUILD="AArch64;WebAssembly" \
 -DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;lldb' \
 -DLLVM_DEFAULT_TARGET_TRIPLE=x86_64-apple-darwin19.6.0 \
 -DCMAKE_BUILD_TYPE=Release \

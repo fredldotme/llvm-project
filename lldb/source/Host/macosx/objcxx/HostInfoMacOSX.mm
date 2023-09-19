@@ -676,6 +676,7 @@ bool SharedCacheInfo::CreateSharedCacheInfoWithInstrospectionSPIs() {
 }
 
 SharedCacheInfo::SharedCacheInfo() {
+#if !TARGET_OS_IPHONE
   if (CreateSharedCacheInfoWithInstrospectionSPIs())
     return;
 #if !TARGET_OS_IPHONE

@@ -28,7 +28,12 @@
 #include <mutex>
 using namespace llvm;
 
-static const ManagedStaticBase *StaticList = nullptr;
+#if TARGET_OS_IPHONE
+thread_local
+#else
+static
+#endif
+const ManagedStaticBase *StaticList = nullptr;
 
 static std::recursive_mutex *getManagedStaticMutex() {
   static std::recursive_mutex m;

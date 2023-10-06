@@ -194,7 +194,7 @@ size_t getThreadCount() {
 // of nested parallel_for_each(), only the outermost one runs parallelly.
 TaskGroup::TaskGroup()
 #if LLVM_ENABLE_THREADS
-    : Parallel((parallel::strategy.ThreadsRequested != 1) &&
+    : Parallel((parallel::strategy.ThreadsRequested > 1) &&
                (threadIndex == UINT_MAX)) {}
 #else
     : Parallel(false) {}
@@ -227,7 +227,7 @@ void TaskGroup::spawn(std::function<void()> F, bool Sequential) {
 void llvm::parallelFor(size_t Begin, size_t End,
                        llvm::function_ref<void(size_t)> Fn) {
 #if LLVM_ENABLE_THREADS
-  if (parallel::strategy.ThreadsRequested != 1) {
+  if (parallel::strategy.ThreadsRequested > 1) {
     auto NumItems = End - Begin;
     // Limit the number of tasks to MaxTasksPerGroup to limit job scheduling
     // overhead on large inputs.

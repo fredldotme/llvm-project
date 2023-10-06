@@ -204,9 +204,13 @@ public:
     if (Opt.hasArgStr())
       return;
     if (!SC->OptionsMap.insert(std::make_pair(Name, &Opt)).second) {
+#if !TARGET_OS_IPHONE
       errs() << ProgramName << ": CommandLine Error: Option '" << Name
              << "' registered more than once!\n";
       report_fatal_error("inconsistency in registered CommandLine options");
+#else
+      return;
+#endif
     }
   }
 
@@ -224,9 +228,11 @@ public:
 
       // Add argument to the argument map!
       if (!SC->OptionsMap.insert(std::make_pair(O->ArgStr, O)).second) {
+#if !TARGET_OS_IPHONE
         errs() << ProgramName << ": CommandLine Error: Option '" << O->ArgStr
                << "' registered more than once!\n";
         HadErrors = true;
+#endif
       }
     }
 
@@ -321,9 +327,13 @@ public:
   void updateArgStr(Option *O, StringRef NewName, SubCommand *SC) {
     SubCommand &Sub = *SC;
     if (!Sub.OptionsMap.insert(std::make_pair(NewName, O)).second) {
+#if !TARGET_OS_IPHONE
       errs() << ProgramName << ": CommandLine Error: Option '" << O->ArgStr
              << "' registered more than once!\n";
       report_fatal_error("inconsistency in registered CommandLine options");
+#else
+      return;
+#endif
     }
     Sub.OptionsMap.erase(O->ArgStr);
   }
@@ -412,7 +422,12 @@ private:
 
 } // namespace
 
-static ManagedStatic<CommandLineParser> GlobalParser;
+#if TARGET_OS_IPHONE
+thread_local
+#else
+static
+#endif
+ManagedStatic<CommandLineParser> GlobalParser;
 
 void cl::AddLiteralOption(Option &O, StringRef Name) {
   GlobalParser->addLiteralOption(O, Name);

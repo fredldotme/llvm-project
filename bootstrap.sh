@@ -13,7 +13,7 @@ echo "Downloading & building no_system Framework:"
 if [ -d no_system ]; then
     rm -rf no_system
 fi
-git clone https://github.com/fredldotme/no_system.git no_system
+git clone --recursive https://github.com/fredldotme/no_system.git no_system
 cd no_system
 bash build.sh
 cd ..
@@ -172,6 +172,14 @@ xcodebuild -project frameworks.xcodeproj -target llc -sdk iphoneos -configuratio
 # xcodebuild -project frameworks.xcodeproj -alltargets -sdk iphoneos -configuration Release -quiet
 comment
 popd
+
+cd ios
+cmake -G Xcode -B build-iphoneos -DCMAKE_SYSTEM_NAME=iOS
+cd build-iphoneos
+xcodebuild
+cd ..
+cd ..
+
 
 # Now, build for the simulator:
 echo "Compiling for the simulator:"

@@ -234,6 +234,12 @@ public:
     return ProcDesc;
   }
 
+  /// Get the available CPUs.
+  ArrayRef<SubtargetSubTypeKV> getCPUTable() const { return ProcDesc; }
+
+  /// Get the available features.
+  ArrayRef<SubtargetFeatureKV> getFeatureTable() const { return ProcFeatures; }
+
   virtual unsigned getHwMode() const { return 0; }
 
   /// Return the cache size in bytes for the given level of cache.

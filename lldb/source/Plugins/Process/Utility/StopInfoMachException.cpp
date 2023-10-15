@@ -10,10 +10,12 @@
 
 #include "lldb/lldb-forward.h"
 
+#if defined(__APPLE__)
 #include <TargetConditionals.h>
-#if defined(__APPLE__) && !defined(TARGET_OS_IPHONE)
+#if !defined(TARGET_OS_IPHONE)
 // Needed for the EXC_RESOURCE interpretation macros
 #include <kern/exc_resource.h>
+#endif
 #endif
 
 #include "lldb/Breakpoint/Watchpoint.h"

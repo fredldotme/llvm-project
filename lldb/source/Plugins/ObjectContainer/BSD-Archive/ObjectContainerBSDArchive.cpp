@@ -8,7 +8,9 @@
 
 #include "ObjectContainerBSDArchive.h"
 
+#ifdef __APPLE__
 #include <TargetConditionals.h>
+#endif
 
 #if defined(_WIN32) || defined(__ANDROID__) || defined(TARGET_OS_IPHONE)
 // Defines from ar, missing on Windows

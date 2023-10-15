@@ -16,7 +16,10 @@
 #include "lldb/Utility/Log.h"
 #include "llvm/Support/Errno.h"
 
+#ifdef __APPLE__
 #include <TargetConditionals.h>
+#endif
+
 #include <climits>
 #ifndef TARGET_OS_IPHONE
 #include <sys/ptrace.h>

@@ -174,6 +174,12 @@ getHIPOffloadTargetTriple(const Driver &D, const ArgList &Args) {
 // static
 std::string Driver::GetResourcesPath(StringRef BinaryPath,
                                      StringRef CustomResourceDir) {
+
+  const char* env_override = ::getenv("CLANG_RESOURCE_DIR");
+  if (env_override) {
+    return std::string(env_override);
+  }
+
   // Since the resource directory is embedded in the module hash, it's important
   // that all places that need it call this function, so that they get the
   // exact same string ("a/../b/" and "b/" get different hashes, for example).

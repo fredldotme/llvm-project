@@ -114,3 +114,9 @@ void GetAdditionalThreadContextPtrsLocked(InternalMmapVector<uptr> *ptrs) {
 }
 
 }  // namespace __lsan
+
+namespace __sanitizer {
+ThreadRegistry *GetThreadRegistryLocked() {
+  return __lsan::GetLsanThreadRegistryLocked();
+}
+}  // namespace __sanitizer

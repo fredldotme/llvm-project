@@ -32,6 +32,17 @@
 #include "lsan_common.h"
 #include "lsan_thread.h"
 
+#if SANITIZER_EMSCRIPTEN
+#define __ATTRP_C11_THREAD ((void*)(uptr)-1)
+#include <emscripten/heap.h>
+extern "C" {
+int emscripten_builtin_pthread_create(void *thread, void *attr,
+                                      void *(*callback)(void *), void *arg);
+int emscripten_builtin_pthread_join(void *th, void **ret);
+int emscripten_builtin_pthread_detach(void *th);
+}
+#endif
+
 #include <stddef.h>
 
 using namespace __lsan;
@@ -447,7 +458,7 @@ INTERCEPTOR(int, pthread_create, void *th, void *attr,
   }();
 
   __sanitizer_pthread_attr_t myattr;
-  if (!attr) {
+  if (!attr || attr == __ATTRP_C11_THREAD) {
     pthread_attr_init(&myattr);
     attr = &myattr;
   }
@@ -527,6 +538,7 @@ INTERCEPTOR(int, pthread_timedjoin_np, void *thread, void **ret,
 
 DEFINE_REAL_PTHREAD_FUNCTIONS
 
+#if !SANITIZER_EMSCRIPTEN
 INTERCEPTOR(void, _exit, int status) {
   if (status == 0 && HasReportedLeaks()) status = common_flags()->exitcode;
   REAL(_exit)(status);
@@ -535,14 +547,14 @@ INTERCEPTOR(void, _exit, int status) {
 #define COMMON_INTERCEPT_FUNCTION(name) INTERCEPT_FUNCTION(name)
 #define SIGNAL_INTERCEPTOR_ENTER() ENSURE_LSAN_INITED
 #include "sanitizer_common/sanitizer_signal_interceptors.inc"
-
-#endif  // SANITIZER_POSIX
+#endif
 
 namespace __lsan {
 
 void InitializeInterceptors() {
   // Fuchsia doesn't use interceptors that require any setup.
 #if !SANITIZER_FUCHSIA
+#if !SANITIZER_EMSCRIPTEN
   InitializeSignalInterceptors();
 
   INTERCEPT_FUNCTION(malloc);
@@ -575,6 +587,7 @@ void InitializeInterceptors() {
   LSAN_MAYBE_INTERCEPT_PTHREAD_ATFORK;
 
   LSAN_MAYBE_INTERCEPT_STRERROR;
+#endif  // !SANITIZER_EMSCRIPTEN
 
 #if !SANITIZER_NETBSD && !SANITIZER_FREEBSD
   if (pthread_key_create(&g_thread_finalize_key, &thread_finalize)) {
@@ -587,3 +600,4 @@ void InitializeInterceptors() {
 }
 
 } // namespace __lsan
+#endif // SANITIZER_EMSCRIPTEN

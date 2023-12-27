@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 set (CMAKE_CXX_STANDARD 17)
 
-project(clang VERSION 17.0.0 LANGUAGES CXX C)
-project(lld VERSION 17.0.0 LANGUAGES CXX C)
-project(lldb VERSION 17.0.0 LANGUAGES CXX C)
+project(clang VERSION 17.0.5 LANGUAGES CXX C)
+project(lld VERSION 17.0.5 LANGUAGES CXX C)
+project(lldb VERSION 17.0.5 LANGUAGES CXX C)
 
 set(LLVM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
 

@@ -55,9 +55,12 @@
 #undef getenv 
 #undef _exit
 #define _exit exit
+#undef getenv
+extern pid_t nosystem_waitpid(pid_t pid, int *status, int options);
 #define fork nosystem_fork
 #define execv nosystem_execv
 #define execve nosystem_execve
+#define waitpid nosystem_waitpid
 #endif
 #endif
 
@@ -449,7 +452,12 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI,
   rusage Info;
   if (ProcStat)
     ProcStat->reset();
-
+  
+#if TARGET_OS_IPHONE
+  do {
+    WaitResult.Pid = waitpid(ChildPid, &status, WaitPidOptions);
+  } while (WaitUntilTerminates && WaitResult.Pid == -1);
+#else
   do {
     WaitResult.Pid = sys::wait4(ChildPid, &status, WaitPidOptions, &Info);
   } while (WaitUntilTerminates && WaitResult.Pid == -1 && errno == EINTR);

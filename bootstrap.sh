@@ -50,7 +50,7 @@ fi
 pushd $OSX_BUILDDIR
 cmake -G Ninja \
 -DLLVM_TARGETS_TO_BUILD="AArch64;X86;WebAssembly" \
--DLLVM_ENABLE_PROJECTS='clang;compiler-rt;lld;openmp;lldb' \
+-DLLVM_ENABLE_PROJECTS='clang;lld;openmp;lldb' \
 -DLLVM_ENABLE_EH=ON \
 -DLLVM_ENABLE_RTTI=ON \
 -DLLVM_LINK_LLVM_DYLIB=ON \

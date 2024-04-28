@@ -15,19 +15,16 @@
 namespace lldb_private {
 namespace wasm {
 
-// Each WebAssembly module has separated address spaces for Code and Memory.
-// A WebAssembly module also has a Data section which, when the module is
-// loaded, gets mapped into a region in the module Memory.
-// For the purpose of debugging, we can represent all these separated 32-bit
-// address spaces with a single virtual 64-bit address space.
-//
-// Struct wasm_addr_t provides this encoding using bitfields
-//
-enum WasmAddressType {
-  Memory = 0x00,
-  Object = 0x01,
-  Invalid = 0x03
-};
+/// Each WebAssembly module has separated address spaces for Code and Memory.
+/// A WebAssembly module also has a Data section which, when the module is
+/// loaded, gets mapped into a region in the module Memory.
+/// For the purpose of debugging, we can represent all these separated 32-bit
+/// address spaces with a single virtual 64-bit address space.
+///
+/// Struct wasm_addr_t provides this encoding using bitfields
+///
+enum WasmAddressType { Memory = 0x00, Code = 0x01, Invalid = 0x03 };
+
 struct wasm_addr_t {
   uint64_t offset : 32;
   uint64_t module_id : 30;
@@ -45,7 +42,7 @@ struct wasm_addr_t {
 };
 
 /// ProcessWasm provides the access to the Wasm program state
-///  retrieved from the Wasm engine.
+/// retrieved from the Wasm engine.
 class ProcessWasm : public process_gdb_remote::ProcessGDBRemote {
 public:
   ProcessWasm(lldb::TargetSP target_sp, lldb::ListenerSP listener_sp);
@@ -59,20 +56,23 @@ public:
   static void Initialize();
   static void DebuggerInitialize(Debugger &debugger);
   static void Terminate();
-  static ConstString GetPluginNameStatic();
-  static const char *GetPluginDescriptionStatic();
+  static llvm::StringRef GetPluginNameStatic();
+  static llvm::StringRef GetPluginDescriptionStatic();
 
   /// PluginInterface protocol.
   /// \{
   llvm::StringRef GetPluginName() override;
-  uint32_t GetPluginVersion();
   /// \}
 
-  /// Process protocol.
-  /// \{
-  size_t ReadMemory(lldb::addr_t vm_addr, void *buf, size_t size, Status &error,
-                    ExecutionContext *exe_ctx = nullptr) override;
-  /// \}
+  size_t ReadMemory(lldb::addr_t vm_addr, void *buf, size_t size,
+                    Status &error) override;
+
+  lldb::ModuleSP ReadModuleFromMemory(const FileSpec &file_spec,
+                                      lldb::addr_t header_addr,
+                                      size_t size_to_read = 512) override;
+
+  lldb::addr_t FixMemoryAddress(lldb::addr_t address,
+                                StackFrame *stack_frame) const override;
 
   /// Query the value of a WebAssembly local variable from the WebAssembly
   /// remote process.
@@ -91,11 +91,11 @@ public:
 
   /// Read from the WebAssembly Memory space.
   size_t WasmReadMemory(uint32_t wasm_module_id, lldb::addr_t addr, void *buf,
-                      size_t buffer_size);
+                        size_t buffer_size);
 
   /// Read from the WebAssembly Data space.
   size_t WasmReadData(uint32_t wasm_module_id, lldb::addr_t addr, void *buf,
-                    size_t buffer_size);
+                      size_t buffer_size);
 
   /// Retrieve the current call stack from the WebAssembly remote process.
   bool GetWasmCallStack(lldb::tid_t tid,
@@ -109,11 +109,13 @@ protected:
   /// ProcessGDBRemote protocol.
   /// \{
   std::shared_ptr<process_gdb_remote::ThreadGDBRemote>
-  CreateThread(lldb::tid_t tid) override;
+  CreateThread(lldb::tid_t tid);
   /// \}
 
 private:
   friend class UnwindWasm;
+  friend class ThreadWasm;
+
   process_gdb_remote::GDBRemoteDynamicRegisterInfoSP &GetRegisterInfo() {
     return m_register_info_sp;
   }

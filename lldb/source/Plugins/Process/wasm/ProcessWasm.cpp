@@ -7,12 +7,13 @@
 //===----------------------------------------------------------------------===//
 
 #include "ProcessWasm.h"
-#include "Plugins/Process/wasm/ThreadWasm.h"
+#include "ThreadWasm.h"
 #include "lldb/Core/Module.h"
 #include "lldb/Core/PluginManager.h"
 #include "lldb/Utility/DataBufferHeap.h"
 
 #include "lldb/Target/UnixSignals.h"
+#include "llvm/ADT/ArrayRef.h"
 
 using namespace lldb;
 using namespace lldb_private;
@@ -25,14 +26,15 @@ LLDB_PLUGIN_DEFINE(ProcessWasm)
 ProcessWasm::ProcessWasm(lldb::TargetSP target_sp, ListenerSP listener_sp)
     : ProcessGDBRemote(target_sp, listener_sp) {
   /* always use linux signals for wasm process */
-  m_unix_signals_sp = UnixSignals::Create(ArchSpec{"wasm32-Ant-wasi-wasm"});
+  m_unix_signals_sp =
+      UnixSignals::Create(ArchSpec{"wasm32-unknown-unknown-wasm"});
 }
 
 void ProcessWasm::Initialize() {
   static llvm::once_flag g_once_flag;
 
   llvm::call_once(g_once_flag, []() {
-    PluginManager::RegisterPlugin(GetPluginNameStatic().GetStringRef(),
+    PluginManager::RegisterPlugin(GetPluginNameStatic(),
                                   GetPluginDescriptionStatic(), CreateInstance,
                                   DebuggerInitialize);
   });
@@ -42,17 +44,14 @@ void ProcessWasm::DebuggerInitialize(Debugger &debugger) {
   ProcessGDBRemote::DebuggerInitialize(debugger);
 }
 
-// PluginInterface
-llvm::StringRef ProcessWasm::GetPluginName() { return GetPluginNameStatic().GetStringRef(); }
+llvm::StringRef ProcessWasm::GetPluginName() { return GetPluginNameStatic(); }
 
-uint32_t ProcessWasm::GetPluginVersion() { return 1; }
-
-ConstString ProcessWasm::GetPluginNameStatic() {
+llvm::StringRef ProcessWasm::GetPluginNameStatic() {
   static ConstString g_name("wasm");
   return g_name;
 }
 
-const char *ProcessWasm::GetPluginDescriptionStatic() {
+llvm::StringRef ProcessWasm::GetPluginDescriptionStatic() {
   return "GDB Remote protocol based WebAssembly debugging plug-in.";
 }
 
@@ -71,7 +70,7 @@ lldb::ProcessSP ProcessWasm::CreateInstance(lldb::TargetSP target_sp,
 }
 
 bool ProcessWasm::CanDebug(lldb::TargetSP target_sp,
-                                bool plugin_specified_by_name) {
+                           bool plugin_specified_by_name) {
   if (plugin_specified_by_name)
     return true;
 
@@ -85,21 +84,28 @@ bool ProcessWasm::CanDebug(lldb::TargetSP target_sp,
   return false;
 }
 
-
-
 std::shared_ptr<ThreadGDBRemote> ProcessWasm::CreateThread(lldb::tid_t tid) {
   return std::make_shared<ThreadWasm>(*this, tid);
 }
 
 size_t ProcessWasm::ReadMemory(lldb::addr_t vm_addr, void *buf, size_t size,
-                               Status &error, ExecutionContext *exe_ctx) {
+                               Status &error) {
   wasm_addr_t wasm_addr(vm_addr);
-  size_t nread = 0;
 
   switch (wasm_addr.GetType()) {
   case WasmAddressType::Memory:
-  case WasmAddressType::Object:
-    return ProcessGDBRemote::ReadMemory(vm_addr, buf, size, error);
+    if (wasm_addr.module_id != 0) {
+      if (WasmReadMemory(wasm_addr.module_id, wasm_addr.offset, buf, size)) {
+        return size;
+      }
+      error.SetErrorStringWithFormat("Wasm memory read failed for 0x%" PRIx64,
+                                     vm_addr);
+      return 0;
+    } else {
+      return ProcessGDBRemote::ReadMemory(vm_addr, buf, size, error);
+    }
+  case WasmAddressType::Code:
+    return ProcessGDBRemote::ReadMemory(wasm_addr, buf, size, error);
   case WasmAddressType::Invalid:
   default:
     error.SetErrorStringWithFormat(
@@ -108,8 +114,31 @@ size_t ProcessWasm::ReadMemory(lldb::addr_t vm_addr, void *buf, size_t size,
   }
 }
 
+lldb::ModuleSP ProcessWasm::ReadModuleFromMemory(const FileSpec &file_spec,
+                                                 lldb::addr_t header_addr,
+                                                 size_t size_to_read) {
+  wasm_addr_t wasm_addr(header_addr);
+  wasm_addr.type = WasmAddressType::Code;
+  return Process::ReadModuleFromMemory(file_spec, wasm_addr, size_to_read);
+}
+
+lldb::addr_t ProcessWasm::FixMemoryAddress(lldb::addr_t address,
+                                           StackFrame *stack_frame) const {
+  if (stack_frame) {
+    assert(stack_frame->CalculateTarget()->GetArchitecture().GetMachine() ==
+           llvm::Triple::wasm32);
+    // Extract Wasm module ID from the program counter.
+    wasm_addr_t wasm_addr(address);
+    wasm_addr.module_id =
+        wasm_addr_t(stack_frame->GetStackID().GetPC()).module_id;
+    wasm_addr.type = WasmAddressType::Memory;
+    return wasm_addr;
+  }
+  return address;
+}
+
 size_t ProcessWasm::WasmReadMemory(uint32_t wasm_module_id, lldb::addr_t addr,
-                                 void *buf, size_t buffer_size) {
+                                   void *buf, size_t buffer_size) {
   char packet[64];
   int packet_len =
       ::snprintf(packet, sizeof(packet), "qWasmMem:%d;%" PRIx64 ";%" PRIx64,
@@ -118,7 +147,8 @@ size_t ProcessWasm::WasmReadMemory(uint32_t wasm_module_id, lldb::addr_t addr,
   assert(packet_len + 1 < (int)sizeof(packet));
   UNUSED_IF_ASSERT_DISABLED(packet_len);
   StringExtractorGDBRemote response;
-  if (m_gdb_comm.SendPacketAndWaitForResponse(packet, response, GetInterruptTimeout()) ==
+  if (m_gdb_comm.SendPacketAndWaitForResponse(packet, response,
+                                              GetInterruptTimeout()) ==
       GDBRemoteCommunication::PacketResult::Success) {
     if (response.IsNormalResponse()) {
       return response.GetHexBytes(llvm::MutableArrayRef<uint8_t>(
@@ -130,7 +160,7 @@ size_t ProcessWasm::WasmReadMemory(uint32_t wasm_module_id, lldb::addr_t addr,
 }
 
 size_t ProcessWasm::WasmReadData(uint32_t wasm_module_id, lldb::addr_t addr,
-                               void *buf, size_t buffer_size) {
+                                 void *buf, size_t buffer_size) {
   char packet[64];
   int packet_len =
       ::snprintf(packet, sizeof(packet), "qWasmData:%d;%" PRIx64 ";%" PRIx64,
@@ -139,7 +169,8 @@ size_t ProcessWasm::WasmReadData(uint32_t wasm_module_id, lldb::addr_t addr,
   assert(packet_len + 1 < (int)sizeof(packet));
   UNUSED_IF_ASSERT_DISABLED(packet_len);
   StringExtractorGDBRemote response;
-  if (m_gdb_comm.SendPacketAndWaitForResponse(packet, response, GetInterruptTimeout()) ==
+  if (m_gdb_comm.SendPacketAndWaitForResponse(packet, response,
+                                              GetInterruptTimeout()) ==
       GDBRemoteCommunication::PacketResult::Success) {
     if (response.IsNormalResponse()) {
       return response.GetHexBytes(llvm::MutableArrayRef<uint8_t>(

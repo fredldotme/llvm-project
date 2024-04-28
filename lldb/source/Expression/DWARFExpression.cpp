@@ -41,7 +41,10 @@
 #include "llvm/DebugInfo/DWARF/DWARFExpression.h"
 
 #include "Plugins/SymbolFile/DWARF/DWARFUnit.h"
-#include "Expression/ProcessWasm.h"
+
+#include "Plugins/Process/wasm/wasmRegisterContext.h"
+#include "Plugins/SymbolFile/DWARF/DWARFUnit.h"
+#include "Plugins/SymbolFile/DWARF/DWARFWasm.h"
 
 using namespace lldb;
 using namespace lldb_private;
@@ -345,6 +348,16 @@ static offset_t GetOpcodeDataSize(const DataExtractor &data,
   {
     uint64_t subexpr_len = data.GetULEB128(&offset);
     return (offset - data_offset) + subexpr_len;
+  }
+
+  case DW_OP_WASM_location: {
+    DWARFWasmLocation wasm_location =
+        static_cast<DWARFWasmLocation>(data.GetU8(&offset));
+    if (wasm_location == DWARFWasmLocation::eGlobalU32)
+      data.GetU32(&offset);
+    else
+      data.GetULEB128(&offset);
+    return offset - data_offset;
   }
 
   default:
@@ -2599,62 +2612,40 @@ bool DWARFExpression::Evaluate(
       }
       break;
     }
+
     case DW_OP_WASM_location: {
-    if (frame) {
-      const llvm::Triple::ArchType machine =
-          frame->CalculateTarget()->GetArchitecture().GetMachine();
-      if (machine != llvm::Triple::wasm32) {
+      uint8_t wasm_op = opcodes.GetU8(&offset);
+      if (wasm_op > DWARFWasmLocation::eGlobalU32) {
         if (error_ptr)
-          error_ptr->SetErrorString("Invalid target architecture for "
-                                    "DW_OP_WASM_location opcode.");
+          error_ptr->SetErrorString("Invalid Wasm location index");
         return false;
       }
+      DWARFWasmLocation wasm_location = static_cast<DWARFWasmLocation>(wasm_op);
 
-      wasm::ProcessWasm *wasm_process =
-          static_cast<wasm::ProcessWasm *>(frame->CalculateProcess().get());
-      int frame_index = frame->GetConcreteFrameIndex();
-      uint64_t wasm_op = opcodes.GetULEB128(&offset);
-      uint64_t index = opcodes.GetULEB128(&offset);
-      uint8_t buf[16];
-      size_t size = 0;
-      switch (wasm_op) {
-      case 0: // Local
-        if (!wasm_process->GetWasmLocal(frame_index, index, buf, 16, size)) {
-          return false;
-        }
-        break;
-      case 1: // Global
-        if (!wasm_process->GetWasmGlobal(frame_index, index, buf, 16, size)) {
-          return false;
-        }
-        break;
-      case 2: // Operand Stack
-        if (!wasm_process->GetWasmStackValue(frame_index, index, buf, 16,
-                                             size)) {
-          return false;
-        }
-        break;
-      default:
-        return false;
+      /* LLDB doesn't have an address space to represents WebAssembly locals,
+       * globals and operand stacks.
+       * We encode these elements into virtual registers:
+       *   | WasmVirtualRegisterKinds: 2 bits | index: 30 bits |
+       */
+      uint32_t index;
+      if (wasm_location == DWARFWasmLocation::eGlobalU32) {
+        index = opcodes.GetU32(&offset);
+      } else {
+        index = opcodes.GetULEB128(&offset);
       }
+      wasm::WasmVirtualRegisterKinds register_tag =
+          wasm::WasmVirtualRegisterInfo::VirtualRegisterKindFromDWARFLocation(
+              wasm_location);
+      reg_num = (register_tag << wasm::WasmRegisterContext::kTagShift) |
+                (index & wasm::WasmRegisterContext::kIndexMask);
 
-      if (size == sizeof(uint32_t)) {
-        uint32_t value;
-        memcpy(&value, buf, size);
-        stack.push_back(Scalar(value));
-      } else if (size == sizeof(uint64_t)) {
-        uint64_t value;
-        memcpy(&value, buf, size);
-        stack.push_back(Scalar(value));
-      } else
+      if (ReadRegisterValueAsScalar(reg_ctx, reg_kind, reg_num, error_ptr, tmp))
+        stack.push_back(tmp);
+      else
         return false;
-    } else {
-      if (error_ptr)
-        error_ptr->SetErrorString("Invalid stack frame in context for "
-                                  "DW_OP_WASM_location opcode.");
-      return false;
+
+      break;
     }
-  } break;
 
     default:
       if (dwarf_cu) {

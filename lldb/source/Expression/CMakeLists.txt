@@ -15,7 +15,6 @@ add_lldb_library(lldbExpression
   REPL.cpp
   UserExpression.cpp
   UtilityFunction.cpp
-  ProcessWasm.cpp
 
   DEPENDS
   intrinsics_gen
@@ -28,7 +27,6 @@ add_lldb_library(lldbExpression
     lldbTarget
     lldbUtility
     lldbPluginProcessGDBRemote
-    lldbPluginProcessWasm
 
   LINK_COMPONENTS
     Core

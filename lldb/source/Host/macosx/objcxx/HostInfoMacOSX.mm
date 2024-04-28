@@ -679,7 +679,6 @@ SharedCacheInfo::SharedCacheInfo() {
 #if !TARGET_OS_IPHONE
   if (CreateSharedCacheInfoWithInstrospectionSPIs())
     return;
-#if !TARGET_OS_IPHONE
   size_t shared_cache_size;
   uint8_t *shared_cache_start =
       _dyld_get_shared_cache_range(&shared_cache_size);

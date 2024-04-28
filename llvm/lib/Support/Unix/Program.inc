@@ -414,14 +414,6 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI,
                             std::string *ErrMsg,
                             std::optional<ProcessStatistics> *ProcStat,
                             bool Polling) {
-  int status;
-  ProcessInfo WaitResult;
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-  // iOS: just wait for the process to terminate
-  // TODO: check whether the more sophisticated version below works
-  // with latest iOS_system.
-  WaitResult.Pid = waitpid(PI.Pid, &status, 0);
-#else
   struct sigaction Act, Old;
   assert(PI.Pid && "invalid pid to wait on, process not started?");
 
@@ -445,14 +437,16 @@ ProcessInfo llvm::sys::Wait(const ProcessInfo &PI,
     alarm(*SecondsToWait);
   }
 
-  // Parent process: Wait for the child process to terminate.
-  int status = 0;
-  ProcessInfo WaitResult;
 #ifndef __Fuchsia__
   rusage Info;
   if (ProcStat)
     ProcStat->reset();
-  
+#endif
+
+  // Parent process: Wait for the child process to terminate.
+  int status = 0;
+  ProcessInfo WaitResult;
+
 #if TARGET_OS_IPHONE
   do {
     WaitResult.Pid = waitpid(ChildPid, &status, WaitPidOptions);

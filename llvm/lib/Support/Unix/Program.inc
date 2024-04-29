@@ -52,9 +52,6 @@
 #undef HAVE_POSIX_SPAWN // function is present, but not working
 #include <nosystem.h>
 #include <libgen.h>
-#undef getenv 
-#undef _exit
-#define _exit exit
 #undef getenv
 extern pid_t nosystem_waitpid(pid_t pid, int *status, int options);
 #define fork nosystem_fork
@@ -349,7 +346,9 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
     // object destructors cloned from the parent process aren't
     // redundantly run, and so that any data buffered in stdio buffers
     // cloned from the parent aren't redundantly written out.
+#if (!TARGET_OS_IPHONE && !TARGET_IPHONE_SIMULATOR)
     _exit(errno == ENOENT ? 127 : 126);
+#endif
   }
 
 #if !TARGET_OS_IPHONE

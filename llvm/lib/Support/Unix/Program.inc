@@ -352,9 +352,11 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
     _exit(errno == ENOENT ? 127 : 126);
   }
 
+#if !TARGET_OS_IPHONE
   // Parent process: Break out of the switch to do our processing.
   default:
     break;
+#endif
   }
 
   PI.Pid = child;

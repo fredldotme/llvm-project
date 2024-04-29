@@ -50,7 +50,7 @@ fi
 pushd $OSX_BUILDDIR
 cmake -G Ninja \
 -DLLVM_TARGETS_TO_BUILD="AArch64;X86;WebAssembly" \
--DLLVM_ENABLE_PROJECTS='clang;lld;openmp;lldb' \
+-DLLVM_ENABLE_PROJECTS='clang;lld;lldb' \
 -DLLVM_ENABLE_EH=ON \
 -DLLVM_ENABLE_RTTI=ON \
 -DLLVM_LINK_LLVM_DYLIB=ON \
@@ -90,7 +90,7 @@ cmake -G Ninja \
 -DLLVM_LINK_LLVM_DYLIB=ON \
 -DLLVM_TARGET_ARCH=AArch64 \
 -DLLVM_TARGETS_TO_BUILD="AArch64;WebAssembly" \
--DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;lldb' \
+-DLLVM_ENABLE_PROJECTS='clang;lld;lldb' \
 -DLLVM_DEFAULT_TARGET_TRIPLE=arm64-apple-darwin \
 -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 -DLLVM_ENABLE_THREADS=ON \
@@ -151,14 +151,12 @@ ar -r lib/libclang_tool.a tools/clang/tools/driver/CMakeFiles/clang.dir/driver.c
 # llvm-dis:  tools/llvm-dis/CMakeFiles/llvm-dis.dir/llvm-dis.cpp.o
 # llc: tools/llc/CMakeFiles/llc.dir/llc.cpp.o
 # lld, wasm-ld, etc: done in Xcode.
-rm -rf frameworks.xcodeproj
-cp -r ../frameworks/frameworks.xcodeproj .
 cp -a ${LLVM_SRCDIR}/no_system/build-iphoneos/Debug-iphoneos/nosystem.framework $IOS_BUILDDIR/lib/
 
 # And then build the frameworks from these static libraries:
-# Somehow, -alltargets does not build all targets. 
-xcodebuild -project frameworks.xcodeproj -target libLLVM -sdk iphoneos -configuration Release -quiet
+# Somehow, -alltargets does not build all targets.
 <<comment
+xcodebuild -project frameworks.xcodeproj -target libLLVM -sdk iphoneos -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target ar -sdk iphoneos -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target clang -sdk iphoneos -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target opt -sdk iphoneos -configuration Release -quiet
@@ -182,6 +180,7 @@ cd ..
 
 
 # Now, build for the simulator:
+<<comment
 echo "Compiling for the simulator:"
 if [ $CLEAN ]; then
   rm -rf $SIM_BUILDDIR
@@ -189,12 +188,14 @@ fi
 if [ ! -d $SIM_BUILDDIR ]; then
   mkdir $SIM_BUILDDIR
 fi
+comment
 pushd $SIM_BUILDDIR
+<<comment
 cmake -G Ninja \
 -DLLVM_LINK_LLVM_DYLIB=ON \
 -DLLVM_TARGET_ARCH=X86 \
 -DLLVM_TARGETS_TO_BUILD="AArch64;WebAssembly" \
--DLLVM_ENABLE_PROJECTS='clang;lld;compiler-rt;lldb' \
+-DLLVM_ENABLE_PROJECTS='clang;lld;lldb' \
 -DLLVM_DEFAULT_TARGET_TRIPLE=x86_64-apple-darwin19.6.0 \
 -DCMAKE_BUILD_TYPE=Release \
 -DLLVM_ENABLE_THREADS=ON \
@@ -256,15 +257,11 @@ ar -r lib/libclang_tool.a tools/clang/tools/driver/CMakeFiles/clang.dir/driver.c
 # llvm-dis:  tools/llvm-dis/CMakeFiles/llvm-dis.dir/llvm-dis.cpp.o
 # llc: tools/llc/CMakeFiles/llc.dir/llc.cpp.o
 # lld, wasm-ld, etc: done in Xcode.
-rm -rf frameworks.xcodeproj
-cp -r ../frameworks/frameworks.xcodeproj .
 cp -a ${LLVM_SRCDIR}/no_system/build-iphonesimulator/Debug-iphonesimulator/nosystem.framework $SIM_BUILDDIR/lib/
 
 # And then build the frameworks from these static libraries:
-# Somehow, -alltargets does not build all targets. 
+# Somehow, -alltargets does not build all targets.
 xcodebuild -project frameworks.xcodeproj -target libLLVM -sdk iphonesimulator -arch x86_64 -configuration Release -quiet
-
-<<comment
 xcodebuild -project frameworks.xcodeproj -target ar -sdk iphonesimulator -arch x86_64 -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target clang -sdk iphonesimulator -arch x86_64 -configuration Release -quiet
 xcodebuild -project frameworks.xcodeproj -target opt -sdk iphonesimulator -arch x86_64 -configuration Release -quiet

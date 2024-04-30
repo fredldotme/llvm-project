@@ -43,7 +43,7 @@ file(GLOB LLDB_AS ${LLVM_LIBS}/liblldb*.a)
 
 add_library(libLLVM
     SHARED
-	libLLVM.cpp
+    libLLVM.cpp
 )
 include_directories(libLLVM
     ${LLVM_DIR}/llvm/include
@@ -80,12 +80,12 @@ include_directories(lldb
 target_link_libraries(libLLVM
     PRIVATE
 
-	${LLVM_AS}
+    ${LLVM_AS}
     ${NOSYSTEM}
     ${FOUNDATION_LIBRARY}
     ${LLD_AS}
     ${LIBZ}
-	${XML2}
+    ${XML2}
 )
 
 target_link_libraries(clang
@@ -112,7 +112,7 @@ target_link_libraries(lldb
     libLLVM
     ${NOSYSTEM}
     ${LLDB_AS}
-	${CLANG_AS}
+    ${CLANG_AS}
     ${FOUNDATION_LIBRARY}
     ${COMPRESSION}
     ${XML2}
@@ -128,7 +128,7 @@ set_target_properties(libLLVM PROPERTIES
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
         XCODE_ATTRIBUTE_SKIP_INSTALL "Yes"
         LINKER_LANGUAGE CXX
-		LINK_FLAGS "-Wl,-all_load"
+        LINK_FLAGS "-Wl,-all_load"
 )
 
 set_target_properties(clang PROPERTIES

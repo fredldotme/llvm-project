@@ -89,6 +89,7 @@ int lld_main(int argc, char **argv, const llvm::ToolContext &) {
 
   ArrayRef<const char *> args(argv, argv + argc);
 
+#if !TARGET_OS_IPHONE
   // Not running in lit tests, just take the shortest codepath with global
   // exception handling and no memory cleanup on exit.
   if (!inTestVerbosity()) {
@@ -97,6 +98,11 @@ int lld_main(int argc, char **argv, const llvm::ToolContext &) {
                            /*exitEarly=*/true);
     return r;
   }
+#else
+  if (!inTestVerbosity()) {
+    return lldMain(args, llvm::outs(), llvm::errs(), LLD_ALL_DRIVERS).retCode;
+  }
+#endif
 
   std::optional<int> mainRet;
   CrashRecoveryContext::Enable();

@@ -65,24 +65,6 @@ extern __thread FILE* nosystem_stderr;
 #endif
 #endif
 
-#include <TargetConditionals.h>
-#if TARGET_OS_IPHONE
-extern "C" {
-extern int nosystem_system(const char* cmd);
-#define system nosystem_system
-
-extern __thread FILE* nosystem_stdin;
-extern __thread FILE* nosystem_stdout;
-extern __thread FILE* nosystem_stderr;
-#undef stdin
-#undef stdout
-#undef stderr
-#define stdin nosystem_stdin
-#define stdout nosystem_stdout
-#define stderr nosystem_stderr
-}
-#endif
-
 using namespace lldb;
 using namespace llvm;
 

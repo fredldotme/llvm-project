@@ -51,7 +51,12 @@ cl::opt<bool> WebAssembly::WasmEnableEmSjLj(
 cl::opt<bool>
     WebAssembly::WasmEnableEH("wasm-enable-eh",
                               cl::desc("WebAssembly exception handling"),
-                              cl::init(true));
+#if TARGET_OS_IPHONE
+                              cl::init(true)
+#else
+                              cl::init(false)
+#endif
+    );
 // setjmp/longjmp handling using wasm EH instrutions
 cl::opt<bool> WebAssembly::WasmEnableSjLj(
     "wasm-enable-sjlj", cl::desc("WebAssembly setjmp/longjmp handling"));

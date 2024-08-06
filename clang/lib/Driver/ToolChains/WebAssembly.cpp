@@ -355,8 +355,10 @@ void WebAssembly::addClangTargetOptions(const ArgList &DriverArgs,
     CC1Args.push_back("-target-feature");
     CC1Args.push_back("+exception-handling");
     // Backend needs -wasm-enable-eh to enable Wasm EH
-    //CC1Args.push_back("-mllvm");
-    //CC1Args.push_back("-wasm-enable-eh");
+#if !TARGET_OS_IPHONE
+    CC1Args.push_back("-mllvm");
+    CC1Args.push_back("-wasm-enable-eh");
+#endif
   }
 
   for (const Arg *A : DriverArgs.filtered(options::OPT_mllvm)) {
